@@ -782,6 +782,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define SIGN2__STATIC 4912
 #define JURYGUY__STATIC 4943
 
+// [AP] Archipelago related items
+
+#define AP_ITEM__STATIC 5120
+#define AP_PROG__STATIC 5140
+#define AP_PROCESSOR__STATIC 5200
+
 #define SECTOREFFECTOR__STATICRR -1
 #define ACTIVATOR__STATICRR -2
 #define TOUCHPLATE__STATICRR -3
@@ -3609,6 +3615,11 @@ extern int32_t MAMACLOUD;
 extern int32_t MAMA;
 extern int32_t MAMAJIBA;
 extern int32_t MAMAJIBB;
+
+// [AP] Archipelago related items
+extern int32_t AP_ITEM;
+extern int32_t AP_PROG;
+extern int32_t AP_PROCESSOR;
 
 #define DYNAMICTILEMAP(Tilenum) (DynamicTileMap[Tilenum])
 

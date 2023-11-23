@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "savegame.h"
 #include "input.h"
 #include "screens.h"
+#include "archipelago.h"
 
 char g_firstDemoFile[BMAX_PATH];
 
@@ -639,7 +640,8 @@ RECHECK:
 
     renderFlushPerms();
 
-    if (!g_netServer && ud.multimode < 2)
+    // [AP] Disable demo playback in AP mode
+    if (!AP && !g_netServer && ud.multimode < 2)
         foundemo = G_OpenDemoRead(g_whichDemo);
 
     if (foundemo == 0)

@@ -1491,6 +1491,10 @@ static struct dynitem g_dynTileList[] =
     { "MAMA", DVPTR(MAMA), 0, MAMA__STATICRR },
     { "MAMAJIBA", DVPTR(MAMAJIBA), 0, MAMAJIBA__STATICRR },
     { "MAMAJIBB", DVPTR(MAMAJIBB), 0, MAMAJIBB__STATICRR },
+    // {AP] Archipelago related items
+    { "AP_ITEM", DVPTR(AP_ITEM), AP_ITEM__STATIC, 0 },
+    { "AP_PROG", DVPTR(AP_PROG), AP_PROG__STATIC, 0 },
+    { "AP_PROCESSOR", DVPTR(AP_PROCESSOR), AP_PROCESSOR__STATIC, 0 },
     { NULL, NULL, -1, -1 },
 };
 
@@ -2252,6 +2256,11 @@ int32_t DUKETAG = DUKETAG__STATIC;
 int32_t SIGN1 = SIGN1__STATIC;
 int32_t SIGN2 = SIGN2__STATIC;
 int32_t JURYGUY = JURYGUY__STATIC;
+
+// [AP] Archipelago related items
+int32_t AP_ITEM = AP_ITEM__STATIC;
+int32_t AP_PROG = AP_PROG__STATIC;
+int32_t AP_PROCESSOR = AP_PROCESSOR__STATIC;
 
 int32_t RRTILE11 = 0;
 int32_t RPG2SPRITE = 0;

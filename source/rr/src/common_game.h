@@ -17,12 +17,13 @@ extern "C" {
 
 extern int g_useCwd;
 
+// [AP] Give our application a distinct name to highlight the archipelago integration
 #ifndef APPNAME
-#define APPNAME             "Rednukem"
+#define APPNAME             "RednukemAP"
 #endif
 
 #ifndef APPBASENAME
-#define APPBASENAME         "rednukem"
+#define APPBASENAME         "rednukemAP"
 #endif
 
 #define GAMEFLAG_DUKE       0x00000001

@@ -75,6 +75,9 @@
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>$(ProjectName)AP</TargetName>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Link>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
@@ -149,6 +152,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\source\rr\src\actors.h" />
     <ClInclude Include="..\..\source\rr\src\android.h" />
+    <ClInclude Include="..\..\source\rr\src\ap_integration.h" />
     <ClInclude Include="..\..\source\rr\src\filestream.h" />
     <ClInclude Include="..\..\source\rr\src\in_android.h" />
     <ClInclude Include="..\..\source\rr\src\anim.h" />
@@ -209,6 +213,7 @@
     <ClCompile Include="..\..\source\rr\rsrc\eduke32_icon.c" />
     <ClCompile Include="..\..\source\rr\src\actors.cpp" />
     <ClCompile Include="..\..\source\rr\src\anim.cpp" />
+    <ClCompile Include="..\..\source\rr\src\ap_integration.cpp" />
     <ClCompile Include="..\..\source\rr\src\cheats.cpp" />
     <ClCompile Include="..\..\source\rr\src\cmdline.cpp" />
     <ClCompile Include="..\..\source\rr\src\config.cpp" />
@@ -255,6 +260,9 @@
     <ClCompile Include="..\..\source\rr\src\winbits.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="archipelago.vcxproj">
+      <Project>{87540def-98b9-459b-bbc8-6b3ccedbab42}</Project>
+    </ProjectReference>
     <ProjectReference Include="audiolib.vcxproj">
       <Project>{0029c61b-b63d-4e61-99f2-f4e49aabfc47}</Project>
     </ProjectReference>

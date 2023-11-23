@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "demo.h"
 #include "savegame.h"
 #include "cmdline.h"
+#include "ap_integration.h"
 
 static int32_t g_whichPalForPlayer = 9;
 
@@ -2553,6 +2554,10 @@ int G_EnterLevel(int gameMode)
     {
         G_LoadMapHack(levelName, g_mapInfo[mii].filename);
     }
+
+    // [AP] Patch loaded map definition with archipelago shuffled sprites
+    if (AP)
+        ap_map_patch_sprites();
 
     if (RR && !RRRA && ud.volume_number == 1 && ud.level_number == 1)
     {

@@ -749,6 +749,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define SIGN2 4912
 #define JURYGUY 4943
 
+// [AP] Additional sprites for archipelago support
+#define AP_ITEM 5120
+#define AP_PROG 5140
+#define AP_PROCESSOR 5200
+
 // These tile positions are reserved!
 #define RESERVEDSLOT1 6132
 #define RESERVEDSLOT2 6133

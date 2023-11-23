@@ -42,6 +42,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "palette.h"
 #include "al_midi.h"
 #include "playmve.h"
+#include "ap_integration.h"
 
 #ifdef __ANDROID__
 #include "android.h"
@@ -3982,6 +3983,13 @@ rr_badguy:
                 }
                 pSprite->shade = sector[pSprite->sectnum].floorshade;
             }
+            break;
+
+        // [AP] Archipelago related items
+        case AP_ITEM__STATIC:
+        case AP_PROG__STATIC:
+            pSprite->xrepeat = pSprite->yrepeat = 48;
+            changespritestat(newSprite, STAT_ACTOR);
             break;
 
         case WATERFOUNTAIN__STATIC:
@@ -8300,6 +8308,9 @@ int app_main(int argc, char const * const * argv)
     }
 #endif
 
+    // [AP] Run the archipelago related startup code before we start actually loading game data
+    ap_startup();
+
     G_LoadGroups(!g_noAutoLoad && !ud.setup.noautoload);
 //    flushlogwindow = 1;
 
@@ -8371,6 +8382,10 @@ int app_main(int argc, char const * const * argv)
         G_MaybeAllocPlayer(i);
 
     G_Startup(); // a bunch of stuff including compiling cons
+
+    // [AP] Game data is available now, time to initialize our archipelago settings
+    // and connect to the server
+    ap_initialize();
 
     g_player[0].playerquitflag = 1;
 

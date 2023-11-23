@@ -2889,7 +2889,7 @@ void C_Compile(const char *fileName)
     for (char * m : g_scriptModules)
     {
         C_Include(m);
-        free(m);
+        Xfree(m);
     }
     g_scriptModules.clear();
 
