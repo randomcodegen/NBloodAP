@@ -11,12 +11,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\source\archipelago\archipelago.h">
+    <ClInclude Include="..\..\source\archipelago\ap_lib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\archipelago\ap_comp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\source\archipelago\archipelago.c">
+    <ClCompile Include="..\..\source\archipelago\ap_lib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\archipelago\ap_comp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

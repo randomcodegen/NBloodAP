@@ -3991,6 +3991,11 @@ rr_badguy:
             pSprite->xrepeat = pSprite->yrepeat = 48;
             changespritestat(newSprite, STAT_ACTOR);
             break;
+        case AP_PROCESSOR__STATIC:
+            pSprite->xrepeat = pSprite->yrepeat = 1;
+            pSprite->cstat |= 32768;
+            changespritestat(newSprite, STAT_ACTOR);
+            break;
 
         case WATERFOUNTAIN__STATIC:
             SLT(newSprite) = 1;

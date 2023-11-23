@@ -27,10 +27,17 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\source\archipelago\archipelago.h" />
+    <ClInclude Include="..\..\source\archipelago\ap_comp.h" />
+    <ClInclude Include="..\..\source\archipelago\ap_lib.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\source\archipelago\archipelago.c" />
+    <ClCompile Include="..\..\source\archipelago\ap_comp.cpp" />
+    <ClCompile Include="..\..\source\archipelago\ap_lib.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="mimalloc.vcxproj">
+      <Project>{1150264b-19c6-4c32-a204-cb79e96d5492}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

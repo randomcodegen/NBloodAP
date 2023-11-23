@@ -32,6 +32,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "savegame.h"
 #include "scriplib.h"
 #include "cmdline.h"
+#include "ap_integration.h"
 
 #if KRANDDEBUG
 # define GAMEEXEC_INLINE
@@ -2938,6 +2939,24 @@ GAMEEXEC_STATIC void VM_Execute(native_t loop)
                 insptr--;
                 VM_CONDITIONAL(tw);
                 continue;
+
+            // [AP] CON language extension for archipelago features
+            case CON_APCOLLECT:
+                insptr++;
+                AP_CheckLocation(vm.pSprite->lotag);
+                continue;
+
+            case CON_APPROCESSQUEUE:
+                insptr++;
+                ap_process_event_queue();
+                continue;
+
+            case CON_IFAPCOLLECTED:
+            {
+                tw = (AP && AP_LOCATION_CHECKED(vm.pSprite->lotag));
+                VM_CONDITIONAL(tw);
+                continue;
+            }
 
             default:  // you aren't supposed to be here!
                 if (RR && ud.recstat == 2)

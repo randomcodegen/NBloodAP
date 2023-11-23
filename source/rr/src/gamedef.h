@@ -350,6 +350,10 @@ enum ScriptKeywords_t
     CON_LEAVEDROPPINGS,     // 164
     CON_DEPLOYBIAS,         // 165
     CON_IFPUPWIND,          // 166
+    // [AP] CON language extension for archipelago features
+    CON_APCOLLECT,          // 167
+    CON_IFAPCOLLECTED,      // 168
+    CON_APPROCESSQUEUE,     // 169
     CON_END
 };
 // KEEPINSYNC with the keyword list in lunatic/con_lang.lua

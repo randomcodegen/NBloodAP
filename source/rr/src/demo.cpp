@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "savegame.h"
 #include "input.h"
 #include "screens.h"
-#include "archipelago.h"
+#include "ap_lib.h"
 
 char g_firstDemoFile[BMAX_PATH];
 

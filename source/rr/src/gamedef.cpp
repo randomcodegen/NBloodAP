@@ -256,6 +256,10 @@ static tokenmap_t const vm_keywords[] =
     { "wackplayer",             CON_WACKPLAYER },
     { "{",                      CON_LEFTBRACE },
     { "}",                      CON_RIGHTBRACE },
+    // [AP] CON language extension for archipelago features
+    { "apcollect",              CON_APCOLLECT },
+    { "approcessqueue",         CON_APPROCESSQUEUE },
+    { "ifapcollected",          CON_IFAPCOLLECTED },
 };
 
 static const vec2_t varvartable[] =
@@ -2215,6 +2219,8 @@ ifvar:
         case CON_IFSIZEDOWN:
         case CON_IFFINDNEWSPOT:
         case CON_IFPUPWIND:
+        // [AP] Archipelago related conditionals
+        case CON_IFAPCOLLECTED:
             {
                 intptr_t offset;
                 intptr_t lastScriptPtr = (g_scriptPtr-&apScript[0]-1);
@@ -2757,6 +2763,10 @@ ifvar:
 
                 G_DoGameStartup(params);
             }
+            continue;
+        // [AP] Con languaged extension for archipelago
+        case CON_APCOLLECT:
+        case CON_APPROCESSQUEUE:
             continue;
         }
     }
