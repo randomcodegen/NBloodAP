@@ -25,5 +25,6 @@ extern void AP_SendItem_Comp(int64_t);
 }
 #endif
 #else
+#include "Archipelago.h"
 #define AP_SendItem_Comp AP_SendItem
 #endif

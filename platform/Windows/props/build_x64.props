@@ -8,7 +8,8 @@
       <PreprocessorDefinitions>NOASM=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>.\lib\64\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\lib\APCpp;.\lib\64\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />
