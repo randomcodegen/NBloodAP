@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "duke3d.h"
 #include "input.h"
+#include "ap_integration.h"
 
 // PRIMITIVE
 
@@ -4855,6 +4856,9 @@ void P_CheckSectors(int playerNum)
                     g_canSeePlayer = 0;
                 P_DoQuote(QUOTE_FOUND_SECRET, pPlayer);
                 pPlayer->secret_rooms++;
+                // [AP] register found secret
+                if (AP)
+                    ap_check_secret(pPlayer->cursectnum);
                 return;
 
             case UINT16_MAX:

@@ -1374,6 +1374,13 @@ static void prelevel(char g)
     Bmemset(ror_protectedsectors, 0, MAXSECTORS);
 #endif
     resetprestat(0,g);
+
+    // [AP] Patch loaded map definition with archipelago related information
+    // This is the best time to do so, because level stats were reset but
+    // All of the sprites are still untouched and in correct order
+    if (AP)
+        ap_on_map_load();
+
     if (RR)
     {
         g_lightninCnt = 0;
@@ -2554,10 +2561,6 @@ int G_EnterLevel(int gameMode)
     {
         G_LoadMapHack(levelName, g_mapInfo[mii].filename);
     }
-
-    // [AP] Patch loaded map definition with archipelago related information
-    if (AP)
-        ap_on_map_load();
 
     if (RR && !RRRA && ud.volume_number == 1 && ud.level_number == 1)
     {

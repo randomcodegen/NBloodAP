@@ -42,6 +42,9 @@ typedef enum
     AP_LOC_SCOUTED     = 0x00000100u,  // Set if location has been scouted before. This is done during init to get progression state
     AP_LOC_HINTED      = 0x00000200u,  // Set if item at location is logically known to the user
     AP_LOC_CHECKED     = 0x00001000u,  // Set if the location has been checked
+    AP_LOC_PICKUP      = 0x00010000u,  // Set if location corresponds to an item pickup
+    AP_LOC_EXIT        = 0x00020000u,  // Set if location corresponds to an exit trigger
+    AP_LOC_SECRET      = 0x00040000u,  // Set if location corresponds to a secret sector
 } ap_location_state_flags_t;
 
 typedef struct {

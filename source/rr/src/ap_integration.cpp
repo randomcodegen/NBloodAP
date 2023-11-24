@@ -18,12 +18,12 @@ static void ap_add_processor_sprite(void);
 static std::string current_map(void)
 {
     if(ud.m_level_number == 7 && ud.m_volume_number == 0)
-    { 
+    {
         // user map. Not sure we want to support this in general, but might as well do the right thing here
         return std::string(boardfilename);
     }
     std::stringstream tmp;
-    tmp << "e" << ud.volume_number + 1 << "l" << ud.level_number + 1;
+    tmp << "E" << ud.volume_number + 1 << "L" << ud.level_number + 1;
     return tmp.str();
 }
 
@@ -35,15 +35,34 @@ static void ap_map_patch_sprites(void)
     std::string map = current_map();
     Json::Value sprite_locations = ap_game_config["locations"][map]["sprites"];
     int32_t i;
+    Json::Value sprite_info;
+    int32_t use_sprite;
+    int location_id;
+    ap_location_t sprite_location;
     for (i = 0; i < Numsprites; i++)
     {
-        Json::Value sprite_info = sprite_locations[std::to_string(i)];
-        if (!sprite_info["id"].isInt()) continue;
-        ap_location_t sprite_location = AP_SHORT_LOCATION(sprite_info["id"].asInt());
-        if (!AP_VALID_LOCATION(sprite_location)) continue;
-        // Have a sprite that should become an AP Item
-        sprite[i].lotag  = sprite_location;
-        sprite[i].picnum = AP_LOCATION_PROGRESSION(sprite_location) ? AP_PROG__STATIC : AP_ITEM__STATIC;
+        sprite_info = sprite_locations[std::to_string(i)];
+        if (!sprite_info["id"].isInt()) continue;  // Not a sprite described in the AP Game Data, ignore it
+        location_id = sprite_info["id"].asInt();
+        if (location_id < 0)
+            use_sprite = 0;
+        else
+        {
+            sprite_location = AP_SHORT_LOCATION(location_id);
+            use_sprite  = AP_VALID_LOCATION(sprite_location);
+        }
+        if (use_sprite)
+        {
+            // Have a sprite that should become an AP Pickup
+            sprite[i].lotag  = sprite_location;
+            sprite[i].picnum = AP_LOCATION_PROGRESSION(sprite_location) ? AP_PROG__STATIC : AP_ITEM__STATIC;
+        }
+        else
+        {
+            // Unused sprite, set it up for deletion
+            sprite[i].lotag  = -1;
+            sprite[i].picnum = AP_ITEM__STATIC;
+        }
     }
 
     // Inject an AP_PROCESSOR sprite into the map
@@ -59,7 +78,7 @@ static void print_secret_sectors()
     int32_t i;
     for (i = 0; i < numsectors; i++)
     {
-        if (sector[i].lotag == 32767) { 
+        if (sector[i].lotag == 32767) {
             out << " " << i << ",";
         }
     }
@@ -68,12 +87,51 @@ static void print_secret_sectors()
 }
 #endif
 
+/*
+  Marks all secret sectors corresponding to already checked
+  locations as already collected.
+*/
+static void ap_mark_known_secret_sectors(void)
+{
+    int32_t i;
+    Json::Value cur_secret_locations = ap_game_config["locations"][current_map()]["sectors"];
+    Json::Value sector_info;
+    for (i = 0; i < numsectors; i++)
+    {
+        if (sector[i].lotag == 32767)
+        {
+            // Secret sector, check if it is a valid location for the AP seed and has been collected already
+            sector_info = cur_secret_locations[std::to_string(i)];
+            if (!sector_info["id"].isInt()) continue;
+            if (sector_info["id"].asInt() < 0) continue;
+            ap_location_t location_id AP_SHORT_LOCATION(sector_info["id"].asInt());
+            if AP_LOCATION_CHECKED(location_id)
+            {
+                // Already have this secret, disable the sector and mark it as collected
+                sector[i].lotag = 0;
+                // ToDo Are we always player 0 here? Probably? Is there something that tracks this correctly?
+                g_player[0].ps->secret_rooms++;
+                // Also increase the max secret count for this one as the sector will no longer be tallied when
+                // the map is processed further
+                g_player[0].ps->max_secret_rooms++;
+            }
+        }
+    }
+}
+
 void ap_on_map_load(void)
 {
     ap_map_patch_sprites();
+
+    ap_mark_known_secret_sectors();
 #ifdef AP_DEBUG_ON
     print_secret_sectors();
 #endif
+}
+
+void ap_on_save_load(void)
+{
+    ap_mark_known_secret_sectors();
 }
 
 /*
@@ -159,4 +217,14 @@ static void ap_add_processor_sprite(void)
     processor->yrepeat  = 0;
     processor->clipdist = 0;
     processor->extra    = 0;
+}
+
+void ap_check_secret(int16_t sectornum)
+{
+    std::string map = current_map();
+    Json::Value sector_location_info = ap_game_config["locations"][map]["sectors"][std::to_string(sectornum)];
+    if (!sector_location_info["id"].isInt())
+        return;
+    ap_location_t secret_location = AP_SHORT_LOCATION(sector_location_info["id"].asInt());
+    AP_CheckLocation(secret_location);
 }

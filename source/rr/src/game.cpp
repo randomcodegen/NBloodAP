@@ -3988,8 +3988,10 @@ rr_badguy:
         // [AP] Archipelago related items
         case AP_ITEM__STATIC:
         case AP_PROG__STATIC:
-            pSprite->xrepeat = pSprite->yrepeat = 48;
-            changespritestat(newSprite, STAT_ACTOR);
+            // Having a lotag of -1 here means the item has been marked for deletion
+            // Otherwise properly size it and set it up as an actor
+            pSprite->xrepeat = pSprite->yrepeat = pSprite->lotag < 0 ? 0 : 48;
+            changespritestat(newSprite, pSprite->lotag < 0 ? STAT_MISC : STAT_ACTOR);
             break;
         case AP_PROCESSOR__STATIC:
             pSprite->xrepeat = pSprite->yrepeat = 1;
