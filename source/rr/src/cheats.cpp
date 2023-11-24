@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "duke3d.h"
 #include "osdcmds.h"
 #include "cheats.h"
+#include "ap_lib.h"
 
 // KEEPINSYNC game.h: enum cheatindex_t
 char CheatStrings [NUMCHEATS][MAXCHEATLEN] =
@@ -69,33 +70,61 @@ char CheatStrings [NUMCHEATS][MAXCHEATLEN] =
     "<RESERVED>",   // 39
 };
 
+// [AP] Disable game breaking cheats outside of debug mode
+
 const uint32_t CheatFunctionFlags [NUMCHEATS] =
 {
+#ifndef AP_DEBUG_ON
+    0,
+    0,
+    0,
+#else
     1 << CHEATFUNC_GOD,
     1 << CHEATFUNC_GIVEEVERYTHING,
     1 << CHEATFUNC_WARP,
+#endif
     1 << CHEATFUNC_COORDS,
     1 << CHEATFUNC_VIEW,
     0,
+#ifndef AP_DEBUG_ON
+    0,
+#else
     1 << CHEATFUNC_UNLOCK,
+#endif
     1 << CHEATFUNC_CASHMAN,
+#ifndef AP_DEBUG_ON
+    0,
+#else
     1 << CHEATFUNC_GIVEALLITEMS,
+#endif
     1 << CHEATFUNC_FRAMERATE,
     1 << CHEATFUNC_SKILL,
     1 << CHEATFUNC_QUOTEBETA,
+#ifndef AP_DEBUG_ON
+    0,
+#else
     1 << CHEATFUNC_HYPER,
+#endif
     1 << CHEATFUNC_MONSTERS,
     0,
     0,
     1 << CHEATFUNC_QUOTETODD,
     1 << CHEATFUNC_SHOWMAP,
+#ifndef AP_DEBUG_ON
+    0,
+#else
     1 << CHEATFUNC_GOD,
+#endif
     1 << CHEATFUNC_QUOTEALLEN,
+#ifndef AP_DEBUG_ON
+    0,
+#else
     1 << CHEATFUNC_CLIP,
     1 << CHEATFUNC_GIVEWEAPONS,
     1 << CHEATFUNC_GIVEINVENTORY,
     1 << CHEATFUNC_GIVEKEYS,
     1 << CHEATFUNC_DEBUG,
+#endif
     0,
     0,
     0,

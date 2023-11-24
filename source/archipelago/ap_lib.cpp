@@ -4,13 +4,17 @@
 
 ap_state_t ap_global_state = AP_DISABLED;
 uint8_t ap_game_id = 0;
+Json::Value ap_game_config;
 
 ap_location_state_t ap_locations[AP_MAX_LOCATION];
 
-void AP_Init(uint8_t game_id)
+void AP_Init(Json::Value game_config)
 {
-    ap_game_id = game_id & AP_GAME_ID_MASK;
+    if (game_config == NULL) return;
+    ap_game_id = game_config["game_id"].asInt() & AP_GAME_ID_MASK;
+    if (ap_game_id == 0) return;
     Bmemset(ap_locations, 0, AP_MAX_LOCATION * sizeof(ap_location_state_t));
+    ap_game_config = game_config;
     ap_global_state = AP_INITIALIZED;
 }
 

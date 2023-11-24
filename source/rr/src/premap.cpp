@@ -2555,9 +2555,9 @@ int G_EnterLevel(int gameMode)
         G_LoadMapHack(levelName, g_mapInfo[mii].filename);
     }
 
-    // [AP] Patch loaded map definition with archipelago shuffled sprites
+    // [AP] Patch loaded map definition with archipelago related information
     if (AP)
-        ap_map_patch_sprites();
+        ap_on_map_load();
 
     if (RR && !RRRA && ud.volume_number == 1 && ud.level_number == 1)
     {

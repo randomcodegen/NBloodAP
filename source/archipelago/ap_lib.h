@@ -1,6 +1,14 @@
 #pragma once
 
+// Debug behaviour for development only
+#ifndef NDEDUG
+#ifndef AP_DEBUG_ON
+#define AP_DEBUG_ON
+#endif
+#endif
+
 #include "stdint.h"
+#include <json/json.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -14,10 +22,10 @@ typedef int64_t ap_net_id_t;
 
 // Namespace prefix for all build engine item and location ids
 #define AP_BUILD_ID_PREFIX (0xB17D0000u)
-#define AP_LOCATION_MASK (0x3FFu)
+#define AP_LOCATION_MASK (0x7FFu)
 #define AP_MAX_LOCATION (AP_LOCATION_MASK)
-#define AP_GAME_ID_MASK (0x3Fu)
-#define AP_GAME_ID_SHIFT (10u)
+#define AP_GAME_ID_MASK (0x1Fu)
+#define AP_GAME_ID_SHIFT (11u)
 
 extern uint8_t ap_game_id;
 
@@ -46,6 +54,7 @@ extern ap_location_state_t ap_locations[AP_MAX_LOCATION];  // All location state
 #define AP_LOCATION_CHECK_MASK(x, y) (AP_VALID_LOCATION_ID(x) && ((ap_locations[x].state & y) == y))
 #define AP_VALID_LOCATION(x) (AP_LOCATION_CHECK_MASK(x, AP_LOC_USED))
 #define AP_LOCATION_CHECKED(x) (AP_LOCATION_CHECK_MASK(x, (AP_LOC_USED | AP_LOC_CHECKED)))
+#define AP_LOCATION_PROGRESSION(x) (AP_LOCATION_CHECK_MASK(x, (AP_LOC_USED | AP_LOC_PROGRESSION)))
 
 typedef enum
 {
@@ -60,7 +69,9 @@ extern ap_state_t ap_global_state;
 #define AP (ap_global_state > AP_DISABLED)
 #define APConnected (ap_global_state == AP_CONNECTED)
 
-extern void AP_Init(uint8_t game_id);
+extern Json::Value ap_game_config;  // Only valid if ap_global_state != AP_DISABLED
+
+extern void AP_Init(Json::Value game_config);
 extern int32_t AP_CheckLocation(ap_location_t loc);
 
 #ifdef __cplusplus
