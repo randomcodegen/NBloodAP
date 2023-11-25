@@ -10,9 +10,17 @@
 // For JSON features
 #include <json/json.h>
 #include <json/reader.h>
+// For Menu manipulation
+#include "menus.h"
 
-static void ap_add_processor_sprite(void);
+uint8_t ap_return_to_menu = 0;
 
+static inline ap_location_t safe_location_id(Json::Value& val)
+{
+    if (val.isInt())
+        return AP_SHORT_LOCATION(val.asInt());
+    return -1;
+}
 
 // Current map name in format eXlY
 static std::string current_map(void)
@@ -25,6 +33,35 @@ static std::string current_map(void)
     std::stringstream tmp;
     tmp << "E" << ud.volume_number + 1 << "L" << ud.level_number + 1;
     return tmp.str();
+}
+
+static void ap_add_processor_sprite(void)
+{
+    spritetype *player, *processor;
+    short       new_idx;
+    player  = &sprite[0];
+    new_idx = insertsprite(player->sectnum, 0);
+    if (new_idx < 0 || new_idx >= MAXSPRITES)
+    {
+        initprintf("Injecting AP Processor sprite failed\n");
+        return;
+    }
+    processor           = &sprite[new_idx];
+    processor->cstat    = 0;
+    processor->ang      = 0;
+    processor->owner    = 0;
+    processor->picnum   = AP_PROCESSOR;
+    processor->pal      = 0;
+    processor->xoffset  = 0;
+    processor->yoffset  = 0;
+    processor->xvel     = 0;
+    processor->yvel     = 0;
+    processor->zvel     = 0;
+    processor->shade    = 8;
+    processor->xrepeat  = 0;
+    processor->yrepeat  = 0;
+    processor->clipdist = 0;
+    processor->extra    = 0;
 }
 
 /*
@@ -102,18 +139,17 @@ static void ap_mark_known_secret_sectors(void)
         {
             // Secret sector, check if it is a valid location for the AP seed and has been collected already
             sector_info = cur_secret_locations[std::to_string(i)];
-            if (!sector_info["id"].isInt()) continue;
-            if (sector_info["id"].asInt() < 0) continue;
-            ap_location_t location_id AP_SHORT_LOCATION(sector_info["id"].asInt());
+            ap_location_t location_id = safe_location_id(sector_info["id"]);
+            if (location_id < 0)
+                continue;
             if AP_LOCATION_CHECKED(location_id)
             {
                 // Already have this secret, disable the sector and mark it as collected
                 sector[i].lotag = 0;
-                // ToDo Are we always player 0 here? Probably? Is there something that tracks this correctly?
-                g_player[0].ps->secret_rooms++;
+                g_player[myconnectindex].ps->secret_rooms++;
                 // Also increase the max secret count for this one as the sector will no longer be tallied when
                 // the map is processed further
-                g_player[0].ps->max_secret_rooms++;
+                g_player[myconnectindex].ps->max_secret_rooms++;
             }
         }
     }
@@ -175,14 +211,78 @@ static Json::Value read_json_from_grp(const char* filename)
     return ret;
 }
 
+std::string ap_active_episodes[MAXVOLUMES];
+uint8_t ap_active_episodes_volumenum[MAXVOLUMES];
+uint8_t ap_active_episode_count = 0;
+std::string ap_active_levels[MAXVOLUMES][MAXLEVELS];
+uint8_t ap_active_levels_count[MAXVOLUMES] = {0};
+uint8_t ap_active_levels_levelnum[MAXVOLUMES][MAXLEVELS] = {0};
+ap_net_id_t ap_active_levels_key[MAXVOLUMES][MAXLEVELS] = {0};
+
+void ap_parse_levels()
+{
+    // Iterate over all episodes defined in the game config
+    // JSON iteration can be out of order, use flags to keep things sequential
+    std::string tmp_episodes[MAXVOLUMES] = { "" };
+    std::string tmp_levels[MAXVOLUMES][MAXLEVELS] = { "" };
+    ap_net_id_t tmp_keys[MAXVOLUMES][MAXLEVELS]   = { 0 };
+
+    for (std::string ep_id : ap_game_config["episodes"].getMemberNames())
+    {
+        uint8_t volume = ap_game_config["episodes"][ep_id]["volumenum"].asInt();
+        tmp_episodes[volume] = ap_game_config["episodes"][ep_id]["name"].asString();
+        for (std::string lev_id : ap_game_config["episodes"][ep_id]["levels"].getMemberNames())
+        {
+            uint8_t levelnum = ap_game_config["episodes"][ep_id]["levels"][lev_id]["levelnum"].asInt();
+            if (AP_VALID_LOCATION(safe_location_id(ap_game_config["episodes"][ep_id]["levels"][lev_id]["exit"])))
+            {
+                tmp_levels[volume][levelnum] = ap_game_config["episodes"][ep_id]["levels"][lev_id]["name"].asString();
+                tmp_keys[volume][levelnum] = ap_game_config["episodes"][ep_id]["levels"][lev_id]["key"].asInt();
+            }
+        }
+    }
+
+    uint8_t episode_counter = 0;
+    uint8_t level_counter;
+    uint8_t ep_has_levels;
+
+    // Now agregate and insert in correct order
+    for(int i=0; i < MAXVOLUMES; i++) {
+        level_counter = 0;
+        ep_has_levels = 0;
+        for (int j = 0; j < MAXLEVELS; j++) {
+            if (tmp_levels[i][j] != "") {
+                ep_has_levels = 1;
+                ap_active_levels_count[episode_counter]++;
+                ap_active_levels[episode_counter][level_counter] = tmp_levels[i][j];
+                ap_active_levels_levelnum[episode_counter][level_counter] = j;
+                ap_active_levels_key[episode_counter][level_counter] = tmp_keys[i][j];
+                level_counter++;
+            }
+        }
+
+        if (ep_has_levels)
+        {
+            ap_active_episode_count++;
+            ap_active_episodes[episode_counter] = tmp_episodes[i];
+            ap_active_episodes_volumenum[episode_counter] = i;
+            episode_counter++;
+        }
+    }
+
+}
+
 void ap_initialize(void)
 {
     Json::Value game_ap_config = read_json_from_grp("ap_config.json");
 
     AP_Init(game_ap_config);
 
-    // Fixed data for used locations for now
-    ap_locations[123].state = AP_LOC_PROGRESSION | AP_LOC_USED | AP_LOC_SCOUTED;
+    if (AP)
+    {
+        // Additional initializations after the archipelago setup is done
+        ap_parse_levels();
+    }
 }
 
 void ap_process_event_queue(void)
@@ -190,41 +290,36 @@ void ap_process_event_queue(void)
 
 }
 
-static void ap_add_processor_sprite(void)
-{
-    spritetype *player, *processor;
-    short       new_idx;
-    player  = &sprite[0];
-    new_idx = insertsprite(player->sectnum, 0);
-    if (new_idx < 0 || new_idx >= MAXSPRITES)
-    {
-        initprintf("Injecting AP Processor sprite failed\n");
-        return;
-    }
-    processor = &sprite[new_idx];
-    processor->cstat = 0;
-    processor->ang   = 0;
-    processor->owner = 0;
-    processor->picnum   = AP_PROCESSOR;
-    processor->pal      = 0;
-    processor->xoffset  = 0;
-    processor->yoffset  = 0;
-    processor->xvel     = 0;
-    processor->yvel     = 0;
-    processor->zvel     = 0;
-    processor->shade    = 8;
-    processor->xrepeat  = 0;
-    processor->yrepeat  = 0;
-    processor->clipdist = 0;
-    processor->extra    = 0;
-}
-
 void ap_check_secret(int16_t sectornum)
 {
-    std::string map = current_map();
-    Json::Value sector_location_info = ap_game_config["locations"][map]["sectors"][std::to_string(sectornum)];
-    if (!sector_location_info["id"].isInt())
-        return;
-    ap_location_t secret_location = AP_SHORT_LOCATION(sector_location_info["id"].asInt());
-    AP_CheckLocation(secret_location);
+    AP_CheckLocation(safe_location_id(ap_game_config["locations"][current_map()]["sectors"][std::to_string(sectornum)]["id"]));
+}
+
+void ap_level_end(void)
+{
+    // Return to menu after beating a level
+    g_player[myconnectindex].ps->gm = 0;
+    Menu_Open(myconnectindex);
+    Menu_Change(MENU_AP_LEVEL);
+    ap_return_to_menu = 1;
+}
+
+void ap_check_exit(int16_t exitnum)
+{
+    ap_location_t exit_location = safe_location_id(ap_game_config["locations"][current_map()]["exit"][std::to_string(exitnum)]["id"]);
+    // Might not have a secret exit defined, so in this case treat as regular exit
+    if (exit_location < 0)
+        exit_location = safe_location_id(ap_game_config["locations"][current_map()]["exit"][std::to_string(0)]["id"]);
+    AP_CheckLocation(exit_location);
+}
+
+void ap_select_episode(uint8_t i)
+{
+    ud.m_volume_number = ap_active_episodes_volumenum[i];
+}
+
+void ap_select_level(uint8_t i)
+{
+    if (ud.m_volume_number <= ap_active_episode_count)
+        ud.m_level_number = ap_active_levels_levelnum[ud.m_volume_number][i];
 }

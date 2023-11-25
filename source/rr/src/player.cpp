@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "duke3d.h"
 #include "demo.h"
+#include "ap_integration.h"
 
 #ifdef __ANDROID__
 #include "android.h"
@@ -7121,6 +7122,9 @@ void P_EndLevel(void)
     for (bssize_t TRAVERSE_CONNECT(playerNum))
         g_player[playerNum].ps->gm = MODE_EOL;
 
+    // [AP] reached a level exit, register it
+    ap_check_exit(ud.secretlevel);
+
     if (ud.from_bonus)
     {
         ud.level_number   = ud.from_bonus;
@@ -9601,6 +9605,8 @@ void P_DHProcessInput(int playerNum)
         {
             for (bssize_t TRAVERSE_CONNECT(playerNum))
                 g_player[playerNum].ps->gm = MODE_EOL;
+            // [AP] reached a level exit, register it
+            ap_check_exit(0);
 
             ud.level_number   = (++ud.level_number < MAXLEVELS) ? ud.level_number : 0;
             ud.m_level_number = ud.level_number;

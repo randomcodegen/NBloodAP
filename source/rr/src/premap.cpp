@@ -2009,7 +2009,7 @@ void G_NewGame(int volumeNum, int levelNum, int skillNum)
         RT_Intro();
 
     // we don't want the intro to play after the multiplayer setup screen
-    if (!RR && (!g_netServer && ud.multimode < 2) && UserMap == 0 &&
+    if (!AP && !RR && (!g_netServer && ud.multimode < 2) && UserMap == 0 &&
         levelNum == 0 && volumeNum == 3 && ud.lockout == 0)
     {
         S_PlaySpecialMusicOrNothing(MUS_BRIEFING);

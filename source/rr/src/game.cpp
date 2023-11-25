@@ -8050,6 +8050,11 @@ static int G_EndOfLevel(void)
 
     if (g_player[myconnectindex].ps->gm&MODE_EOL)
     {
+        // [AP] End of Level reached
+        if (AP)
+            ap_level_end();
+            return 2;
+
         G_CloseDemoWrite();
 
         ready2send = 0;
@@ -8627,7 +8632,8 @@ MAIN_LOOP_RESTART:
     for (int & q : user_quote_time)
         q = 0;
 
-    Menu_Change(MENU_MAIN);
+    if (!ap_return_to_menu)
+        Menu_Change(MENU_MAIN);
 
     //if (g_networkMode != NET_DEDICATED_SERVER)
     {
@@ -8637,7 +8643,11 @@ MAIN_LOOP_RESTART:
 
     if (ud.warp_on == 1)
     {
-        G_NewGame_EnterLevel();
+        // [AP] Disable loading levels from command line or startup options in AP mode
+        if (AP)
+            ud.warp_on = 0;
+        else
+            G_NewGame_EnterLevel();
         // may change ud.warp_on in an error condition
     }
 

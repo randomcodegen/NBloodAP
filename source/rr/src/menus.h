@@ -143,6 +143,8 @@ enum MenuIndex_t {
     MENU_DHTARGET       = 30001,
     MENU_DHWEAPON       = 30002,
     MENU_DHTROPHIES     = 30003,
+    // [AP] Archipelago menu entries
+    MENU_AP_LEVEL       = 40000,
 };
 
 

@@ -4865,6 +4865,8 @@ void P_CheckSectors(int playerNum)
                 // if (REALITY && ud.multimode > 1 && ud.coop == 0 && dukematch_mode != 1)
                 //     break;
                 pSector->lotag = 0;
+                // [AP] reached a level exit, register it
+                ap_check_exit(0);
                 for (bssize_t TRAVERSE_CONNECT(playerNum))
                     g_player[playerNum].ps->gm = MODE_EOL;
 

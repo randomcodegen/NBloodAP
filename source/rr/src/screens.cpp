@@ -31,6 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "osdfuncs.h"
 #include "demo.h"
 #include "mdsprite.h"
+#include "ap_integration.h"
 
 #ifdef __ANDROID__
 #include "android.h"
@@ -1565,6 +1566,10 @@ void G_DisplayLogo(void)
     S_StopMusic();
     FX_StopAllSounds(); // JBF 20031228
     S_ClearSoundLocks();  // JBF 20031228
+
+    // [AP] Skip logos and opening scenes when returning to menu from in-game
+    if (ap_return_to_menu)
+        g_noLogo = 1;
     if (DEER)
     {
         if (!g_noLogo /* && (!g_netServer && ud.multimode < 2) */)
@@ -1939,6 +1944,8 @@ void G_DisplayLogo(void)
 
     //G_FadePalette(0,0,0,0);
     videoClearScreen(0L);
+
+    ap_return_to_menu = 0;
 }
 
 void G_DoOrderScreen(void)

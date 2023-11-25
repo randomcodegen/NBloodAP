@@ -30,6 +30,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "input.h"
 #include "menus.h"
 #include "cheats.h"
+#include "ap_integration.h"
+
+static void ap_init_menu(void);
+static void ap_menu_prepare_level_list(uint8_t ep_menu_cnt);
 
 #include "in_android.h"
 #ifndef __ANDROID__
@@ -437,6 +441,7 @@ static MenuEntry_t ME_Space8_Redfont = MAKE_MENUENTRY( NULL, &MF_Redfont, &MEF_N
 static MenuLink_t MEO_ ## EntryName = { LinkID, MA_Advance, };\
 static MenuEntry_t ME_ ## EntryName = MAKE_MENUENTRY( Title, &MF_Redfont, &Format, &MEO_ ## EntryName, Link )
 
+static char const s_AP_SelectEpisode[] = "Select Episode";
 static char const s_NewGame[] = "New Game";
 static char const s_SaveGame[] = "Save Game";
 static char const s_LoadGame[] = "Load Game";
@@ -502,6 +507,12 @@ static MenuEntry_t ME_EPISODE[MAXVOLUMES];
 static MenuLink_t MEO_EPISODE_USERMAP = { MENU_USERMAP, MA_Advance, };
 static MenuEntry_t ME_EPISODE_USERMAP = MAKE_MENUENTRY( "User Map", &MF_Redfont, &MEF_CenterMenu, &MEO_EPISODE_USERMAP, Link );
 static MenuEntry_t *MEL_EPISODE[MAXVOLUMES+2]; // +2 for spacer and User Map
+
+// [AP] Level Select menu templates for archipelago
+static MenuLink_t MEO_LEVEL = { MENU_SKILL, MA_Advance, };
+static MenuEntry_t ME_LEVEL_TEMPLATE = MAKE_MENUENTRY(NULL, &MF_Redfont, &MEF_CenterMenu, &MEO_LEVEL, Link);
+static MenuEntry_t ME_LEVEL[MAXLEVELS];
+static MenuEntry_t *MEL_LEVEL[MAXLEVELS];
 
 static MenuEntry_t ME_SKILL_TEMPLATE = MAKE_MENUENTRY( NULL, &MF_Redfont, &MEF_CenterMenu, &MEO_NULL, Link );
 static MenuEntry_t ME_SKILL[MAXSKILLS];
@@ -1654,6 +1665,9 @@ static MenuMenu_t M_DHTARGET = MAKE_MENUMENU( NoTitle, &MMF_Top_Episode, MEL_DHT
 static MenuMenu_t M_DHWEAPON = MAKE_MENUMENU( NoTitle, &MMF_Top_Skill, MEL_DHWEAPON );
 static MenuPanel_t M_DHTROPHIES = { NoTitle, MENU_NULL, MA_Return, MENU_NULL, MA_Advance, };
 
+// [AP] AP related menus
+static MenuMenu_t M_LEVEL = MAKE_MENUMENU("Select Level", &MMF_Top_Skill, MEL_LEVEL);  // ToDo Formatting
+
 #ifdef EDUKE32_SIMPLE_MENU
 static MenuPanel_t M_STORY = { NoTitle, MENU_STORY, MA_Return, MENU_STORY, MA_Advance, };
 #else
@@ -1844,6 +1858,8 @@ static Menu_t Menus[] = {
     { &M_DHTARGET, MENU_DHTARGET, MENU_MAIN, MA_Return, Menu },
     { &M_DHWEAPON, MENU_DHWEAPON, MENU_PREVIOUS, MA_Return, Menu },
     { &M_DHTROPHIES, MENU_DHTROPHIES, MENU_MAIN, MA_Return, Panel },
+    // [AP] AP related Menus
+    { &M_LEVEL, MENU_AP_LEVEL, MENU_EPISODE, MA_Return, Menu },
 };
 
 static CONSTEXPR const uint16_t numMenus = ARRAY_SIZE(Menus);
@@ -2061,7 +2077,8 @@ void Menu_Init(void)
     {
         M_EPISODE.numEntries = 3;
     }
-    else
+    // [AP] Disable user map selection
+    else if (!AP)
     {
         M_EPISODE.numEntries = g_volumeCnt+2;
         MEL_EPISODE[g_volumeCnt] = &ME_Space4_Redfont;
@@ -2351,6 +2368,10 @@ void Menu_Init(void)
                 MEL_GAMESETUP[i] = &ME_GAMESETUP_AIM_AUTO_DN64;
         }
     }
+
+    // [AP] And now do all of the archipelago modifications to the menu structure!
+    if (AP)
+        ap_init_menu();
 }
 
 static void Menu_Run(Menu_t *cm, vec2_t origin);
@@ -4054,7 +4075,8 @@ static void Menu_EntryFocus(/*MenuEntry_t *entry*/)
 
 static void Menu_StartGameWithoutSkill(void)
 {
-    ud.m_player_skill = M_SKILL.currentEntry+1;
+    // [AP] Just use the defined difficulty level for the seed
+    ud.m_player_skill = AP ? 0 : M_SKILL.currentEntry+1; // ToDo use difficulty level from AP seed
 
     g_skillSoundVoice = S_PlaySound(RR ? 341 : (REALITY ? 0x33 : PISTOL_BODYHIT));
 
@@ -4161,15 +4183,27 @@ static void Menu_EntryLinkActivate(MenuEntry_t *entry)
                     break;
                 }
             }
+            else if(AP)
+            {
+                ap_select_episode(M_EPISODE.currentEntry);
+                ap_menu_prepare_level_list(M_EPISODE.currentEntry);
+            }
             else
             {
                 ud.m_volume_number = M_EPISODE.currentEntry;
                 ud.m_level_number = 0;
             }
 
-            if (g_skillCnt == 0)
+            if (!AP && g_skillCnt == 0)
                 Menu_StartGameWithoutSkill();
         }
+        break;
+
+    case MENU_AP_LEVEL:
+        ap_select_level(M_LEVEL.currentEntry);
+        ud.m_player_skill = 0; // ToDo select skill from ap seed
+        ud.multimode = 1;
+        G_NewGame_EnterLevel();
         break;
 
     case MENU_SKILL:
@@ -8573,4 +8607,47 @@ void M_DisplayMenus(void)
         CAMERACLOCK = (int32_t) totalclock;
         CAMERADIST = 65536;
     }
+}
+
+// [AP] Menu implementations. Need to do this here because of static linkage
+void ap_init_menu(void)
+{
+    // This is spicy, we modify the default menu structure in wild ways now!
+    // Point episodes menu to intermediary level select menu
+    for (int i = 0; i < numMenus; i++) {
+        if (Menus[i].menuID == MENU_SKILL)
+            Menus[i].parentID = MENU_AP_LEVEL;
+    }
+    // Update episode list to known episodes
+    for (int i = 0; i < ap_active_episode_count; i++) {
+        ME_EPISODE[i].name = ap_active_episodes[i].c_str();
+    }
+    // This might leak some memory, but it happens once so I don't care
+    for (int i = ap_active_episode_count; i < MAXVOLUMES; i++) {
+        Bmemset(&ME_EPISODE[i], 0 , sizeof(MenuEntry_t));
+    }
+    M_EPISODE.numEntries = ap_active_episode_count;
+    MEO_EPISODE.linkID = MENU_AP_LEVEL;
+    // Update display text
+    ME_MAIN_NEWGAME.name = s_AP_SelectEpisode;
+    ME_MAIN_NEWGAME_INGAME.name = s_AP_SelectEpisode;
+    MEO_MAIN_NEWGAME_INGAME.linkID = MENU_EPISODE;
+}
+
+void ap_menu_prepare_level_list(uint8_t ep_menu_cnt)
+{
+    // Get active level count for episode
+    M_LEVEL.numEntries = ap_active_levels_count[ep_menu_cnt];
+    for (int i = 0; i < numMenus; i++)
+        if (Menus[i].menuID == MENU_SKILL)
+            Menus[i].parentID = MENU_AP_LEVEL;
+    // Update level list for selected episode
+    for (int i = 0; i < M_LEVEL.numEntries; i++)
+    {
+        MEL_LEVEL[i] = &ME_LEVEL[i];
+        ME_LEVEL[i] = ME_LEVEL_TEMPLATE;
+        ME_LEVEL[i].name = ap_active_levels[ep_menu_cnt][i].c_str();
+    }
+    for (int i = M_LEVEL.numEntries; i < MAXLEVELS; i++)
+        Bmemset(&ME_LEVEL[i], 0, sizeof(MenuEntry_t));
 }
