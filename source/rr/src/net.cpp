@@ -31,6 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "enet.h"
 #include "lz4.h"
 #include "crc32.h"
+#include "ap_integration.h"
 
 #define TIMERUPDATESIZ 32
 
@@ -1094,7 +1095,7 @@ check_enemy_sprite:
                     my_not_on_water = 1;
             }
         }
-        if (pPlayer->jetpack_on == 0 && pPlayer->inv_amount[GET_STEROIDS] > 0 && pPlayer->inv_amount[GET_STEROIDS] < 400)
+        if (pPlayer->jetpack_on == 0 && (AP ? pPlayer->steroids_on : pPlayer->inv_amount[GET_STEROIDS] > 0 && pPlayer->inv_amount[GET_STEROIDS] < 400))
             velocityModifier <<= 1;
 
         myvel.x += ((pInput->fvel * velocityModifier) << 6);

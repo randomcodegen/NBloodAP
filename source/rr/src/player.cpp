@@ -90,7 +90,7 @@ static void P_IncurDamage(DukePlayer_t * const pPlayer)
 
     pPlayer->extra_extra8 = 0;
 
-    if ((!RR && pPlayer->inv_amount[GET_SHIELD] > 0) || (RR && pPlayer->inv_amount[GET_STEROIDS] > 0 && pPlayer->inv_amount[GET_STEROIDS] < 400))
+    if ((!RR && pPlayer->inv_amount[GET_SHIELD] > 0) || (RR && (AP ? pPlayer->steroids_on : pPlayer->inv_amount[GET_STEROIDS] > 0 && pPlayer->inv_amount[GET_STEROIDS] < 400)))
     {
         int const shieldDamage = playerDamage * (20 + (krand2()%30)) / 100;
 
@@ -722,7 +722,7 @@ growspark_rr:
                             A_PlaySound(260, kneeSprite);
                     }
 
-                    if (pPlayer != NULL && pPlayer->inv_amount[GET_STEROIDS] > 0 && pPlayer->inv_amount[GET_STEROIDS] < 400)
+                    if (pPlayer != NULL && (AP ? pPlayer->steroids_on : pPlayer->inv_amount[GET_STEROIDS] > 0 && pPlayer->inv_amount[GET_STEROIDS] < 400))
                         sprite[kneeSprite].extra += (pPlayer->max_player_health>>2);
 
                     if (hitData.sprite >= 0 && sprite[hitData.sprite].picnum != ACCESSSWITCH && sprite[hitData.sprite].picnum != ACCESSSWITCH2)
@@ -4740,10 +4740,11 @@ static int32_t P_DoCounters(int playerNum)
         }
     }
 
-    if (pPlayer->inv_amount[GET_STEROIDS] > 0 && pPlayer->inv_amount[GET_STEROIDS] < 400)
+    if ((AP ? pPlayer->steroids_on : pPlayer->inv_amount[GET_STEROIDS] > 0 && pPlayer->inv_amount[GET_STEROIDS] < 400))
     {
         if (--pPlayer->inv_amount[GET_STEROIDS] == 0)
         {
+            pPlayer->steroids_on = 0;
             P_SelectNextInvItem(pPlayer);
             if (RR)
             {
@@ -4823,23 +4824,27 @@ static int32_t P_DoCounters(int playerNum)
             if (pPlayer->access_spritenum >= 0)
             {
                 P_ActivateSwitch(playerNum, pPlayer->access_spritenum, 1);
-                switch (sprite[pPlayer->access_spritenum].pal)
-                {
-                    case 0:  RR ? pPlayer->keys[1] = 1 : pPlayer->got_access &= (0xffff - 0x1); break;
-                    case 21: RR ? pPlayer->keys[2] = 1 : pPlayer->got_access &= (0xffff - 0x2); break;
-                    case 23: RR ? pPlayer->keys[3] = 1 : pPlayer->got_access &= (0xffff - 0x4); break;
-                }
+                // [AP] Don't take away cards on use, this is just confusing for players
+                if (!AP)
+                    switch (sprite[pPlayer->access_spritenum].pal)
+                    {
+                        case 0:  RR ? pPlayer->keys[1] = 1 : pPlayer->got_access &= (0xffff - 0x1); break;
+                        case 21: RR ? pPlayer->keys[2] = 1 : pPlayer->got_access &= (0xffff - 0x2); break;
+                        case 23: RR ? pPlayer->keys[3] = 1 : pPlayer->got_access &= (0xffff - 0x4); break;
+                    }
                 pPlayer->access_spritenum = -1;
             }
             else
             {
                 P_ActivateSwitch(playerNum,pPlayer->access_wallnum,0);
-                switch (wall[pPlayer->access_wallnum].pal)
-                {
-                    case 0:  RR ? pPlayer->keys[1] = 1 : pPlayer->got_access &= (0xffff - 0x1); break;
-                    case 21: RR ? pPlayer->keys[2] = 1 : pPlayer->got_access &= (0xffff - 0x2); break;
-                    case 23: RR ? pPlayer->keys[3] = 1 : pPlayer->got_access &= (0xffff - 0x4); break;
-                }
+                // [AP] Don't take away cards on use, this is just confusing for players
+                if (!AP)
+                    switch (wall[pPlayer->access_wallnum].pal)
+                    {
+                        case 0:  RR ? pPlayer->keys[1] = 1 : pPlayer->got_access &= (0xffff - 0x1); break;
+                        case 21: RR ? pPlayer->keys[2] = 1 : pPlayer->got_access &= (0xffff - 0x2); break;
+                        case 23: RR ? pPlayer->keys[3] = 1 : pPlayer->got_access &= (0xffff - 0x4); break;
+                    }
             }
         }
 
@@ -5507,6 +5512,7 @@ void P_FragPlayer(int playerNum)
     }
 
     pPlayer->jetpack_on  = 0;
+    pPlayer->steroids_on = 0;
     pPlayer->holoduke_on = -1;
 
     if (!RR)
@@ -8856,7 +8862,7 @@ check_enemy_sprite:
                 pPlayer->walking_snd_toggle--;
         }
 
-        if (pPlayer->jetpack_on == 0 && pPlayer->inv_amount[GET_STEROIDS] > 0 && pPlayer->inv_amount[GET_STEROIDS] < 400)
+        if (pPlayer->jetpack_on == 0 && (AP ? pPlayer->steroids_on : pPlayer->inv_amount[GET_STEROIDS] > 0 && pPlayer->inv_amount[GET_STEROIDS] < 400))
             velocityModifier <<= 1;
 
         pPlayer->vel.x += (((g_player[playerNum].inputBits->fvel) * velocityModifier) << 6);

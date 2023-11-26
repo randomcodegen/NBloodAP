@@ -939,7 +939,7 @@ void P_ResetStatus(int playerNum)
     //pPlayer->sbs               = 0;
     pPlayer->palette           = BASEPAL;
 
-    if (pPlayer->inv_amount[GET_STEROIDS] < 400)
+    if (!AP && pPlayer->inv_amount[GET_STEROIDS] < 400)
     {
         pPlayer->inv_amount[GET_STEROIDS] = 0;
         pPlayer->inven_icon = ICON_NONE;
@@ -947,6 +947,7 @@ void P_ResetStatus(int playerNum)
 
     pPlayer->heat_on           = 0;
     pPlayer->jetpack_on        = 0;
+    pPlayer->steroids_on       = 0;
     pPlayer->holoduke_on       = -1;
     pPlayer->look_ang          = 512 - ((ud.level_number & 1) << 10);
     pPlayer->rotscrnang        = 0;
@@ -1119,6 +1120,7 @@ void P_ResetInventory(int playerNum)
     pPlayer->scuba_on               = 0;
     pPlayer->heat_on                = 0;
     pPlayer->jetpack_on             = 0;
+    pPlayer->steroids_on            = 0;
     pPlayer->holoduke_on            = -1;
     pPlayer->inven_icon             = ICON_NONE;
     pPlayer->inv_amount[GET_SHIELD] = g_startArmorAmount;
@@ -2649,6 +2651,9 @@ int G_EnterLevel(int gameMode)
             case HURTRAIL__STATIC:
             case FLOORSLIME__STATIC:
             case FLOORPLASMA__STATIC:
+                // Don't take away our stuff in AP mode!
+                if (AP)
+                    break;
                 P_ResetWeapons(i);
                 P_ResetInventory(i);
 

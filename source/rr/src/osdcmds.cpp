@@ -29,6 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "osdfuncs.h"
 #include "savegame.h"
 #include "sbar.h"
+#include "ap_integration.h"
 
 #ifdef LUNATIC
 # include "lunatic_game.h"
@@ -131,7 +132,19 @@ static int osdcmd_changelevel(osdcmdptr_t parm)
         */
         return OSDCMD_OK;
     }
-    if (g_player[myconnectindex].ps->gm & MODE_GAME)
+    // [AP] Only allow changing level if it is unlocked
+    if (AP)
+    {
+        std::string level_str = ap_format_map_id(level, volume);
+        Json::Value level_data = ap_level_data[level_str];
+        if (!(AP_HasItem(AP_NET_ID(level_data["unlock"].asInt()))))
+        {
+            OSD_Printf("changelevel: Level not unlocked yet\n");
+            return OSDCMD_OK;
+        }
+    }
+    // [AP] Always load as new game for consistency
+    if (!AP && g_player[myconnectindex].ps->gm & MODE_GAME)
     {
         // in-game behave like a cheat
         osdcmd_cheatsinfo_stat.cheatnum = CHEAT_SCOTTY;
@@ -164,6 +177,13 @@ static int osdcmd_map(osdcmdptr_t parm)
 {
     int32_t i;
     char filename[BMAX_PATH];
+
+    /// [AP] Disable command
+    if (AP)
+    {
+        OSD_Printf("Command not allowed in AP mode!\n");
+        return OSDCMD_OK;
+    }
 
     const int32_t wildcardp = parm->numparms==1 &&
         (Bstrchr(parm->parms[0], '*') != NULL);
@@ -308,6 +328,13 @@ static int osdcmd_map(osdcmdptr_t parm)
 //    etc.)
 static int osdcmd_demo(osdcmdptr_t parm)
 {
+    // [AP] Disable command
+    if (AP)
+    {
+        OSD_Printf("Command not allowed in AP mode!\n");
+        return OSDCMD_OK;
+    }
+
     if (numplayers > 1)
     {
         OSD_Printf("Command not allowed in multiplayer\n");
@@ -335,6 +362,13 @@ static int osdcmd_demo(osdcmdptr_t parm)
 
 static int osdcmd_activatecheat(osdcmdptr_t parm)
 {
+    // [AP] Disable command
+    if (AP)
+    {
+        OSD_Printf("Command not allowed in AP mode!\n");
+        return OSDCMD_OK;
+    }
+
     if (parm->numparms != 1)
         return OSDCMD_SHOWHELP;
 
@@ -348,6 +382,13 @@ static int osdcmd_activatecheat(osdcmdptr_t parm)
 
 static int osdcmd_god(osdcmdptr_t UNUSED(parm))
 {
+    // [AP] Disable command
+    if (AP)
+    {
+        OSD_Printf("Command not allowed in AP mode!\n");
+        return OSDCMD_OK;
+    }
+
     UNREFERENCED_CONST_PARAMETER(parm);
     if (numplayers == 1 && g_player[myconnectindex].ps->gm & MODE_GAME)
         osdcmd_cheatsinfo_stat.cheatnum = CHEAT_CORNHOLIO;
@@ -360,6 +401,13 @@ static int osdcmd_god(osdcmdptr_t UNUSED(parm))
 static int osdcmd_noclip(osdcmdptr_t UNUSED(parm))
 {
     UNREFERENCED_CONST_PARAMETER(parm);
+
+    // [AP] Disable command
+    if (AP)
+    {
+        OSD_Printf("Command not allowed in AP mode!\n");
+        return OSDCMD_OK;
+    }
 
     if (numplayers == 1 && g_player[myconnectindex].ps->gm & MODE_GAME)
     {
@@ -499,6 +547,13 @@ static int osdcmd_spawn(osdcmdptr_t parm)
     int16_t ang=0;
     int16_t set=0, idx;
     vec3_t vect;
+
+    // [AP] Disable command
+    if (AP)
+    {
+        OSD_Printf("Command not allowed in AP mode!\n");
+        return OSDCMD_OK;
+    }
 
     if (numplayers > 1 || !(g_player[myconnectindex].ps->gm & MODE_GAME))
     {
@@ -655,6 +710,13 @@ static int osdcmd_give(osdcmdptr_t parm)
             g_player[myconnectindex].ps->dead_flag != 0)
     {
         OSD_Printf("give: Cannot give while dead or not in a single-player game.\n");
+        return OSDCMD_OK;
+    }
+
+    // [AP] Disable command
+    if (AP)
+    {
+        OSD_Printf("Command not allowed in AP mode!\n");
         return OSDCMD_OK;
     }
 
@@ -1059,6 +1121,13 @@ static int osdcmd_disconnect(osdcmdptr_t UNUSED(parm))
 
 static int osdcmd_connect(osdcmdptr_t parm)
 {
+    // [AP] Disable command
+    if (AP)
+    {
+        OSD_Printf("Command not allowed in AP mode!\n");
+        return OSDCMD_OK;
+    }
+
     if (parm->numparms != 1)
         return OSDCMD_SHOWHELP;
 

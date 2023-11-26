@@ -3819,10 +3819,11 @@ void P_HandleKeys(int playerNum)
 
         if (TEST_SYNC_KEY(playerBits, SK_STEROIDS))
         {
-            if (pPlayer->inv_amount[GET_STEROIDS] == 400)
+            if (AP ? (pPlayer->steroids_on == 0 && pPlayer->inv_amount[GET_STEROIDS] > 0) : pPlayer->inv_amount[GET_STEROIDS] == 400)
             {
                 pPlayer->inv_amount[GET_STEROIDS]--;
                 pPlayer->inven_icon = ICON_STEROIDS;
+                pPlayer->steroids_on = 1;
                 A_PlaySound(REALITY ? 174 : DUKE_TAKEPILLS,pPlayer->i);
                 P_DoQuote(QUOTE_USED_STEROIDS,pPlayer);
             }
@@ -4229,9 +4230,10 @@ void P_HandleSharedKeys(int playerNum)
         {
             if (VM_OnEvent(EVENT_USESTEROIDS,g_player[playerNum].ps->i,playerNum) == 0)
             {
-                if (pPlayer->inv_amount[GET_STEROIDS] == 400)
+                if (AP ? (pPlayer->steroids_on == 0 && pPlayer->inv_amount[GET_STEROIDS] > 0) : pPlayer->inv_amount[GET_STEROIDS] == 400)
                 {
                     pPlayer->inv_amount[GET_STEROIDS]--;
+                    pPlayer->steroids_on = 1;
                     A_PlaySound(DUKE_TAKEPILLS,pPlayer->i);
                     P_DoQuote(QUOTE_USED_STEROIDS,pPlayer);
                 }

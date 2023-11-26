@@ -98,6 +98,7 @@ extern void AP_LibShutdown(void);
 
 typedef struct {
     std::map<ap_net_id_t, uint16_t> persistent;
+    std::map<ap_net_id_t, uint16_t> progressive;
 } ap_state_t;
 
 extern ap_state_t ap_game_state;
@@ -107,6 +108,7 @@ extern std::vector<ap_net_id_t> ap_item_queue;  // Queue of items to be provided
 
 extern bool AP_HasItem(ap_net_id_t id);
 extern uint16_t AP_ItemCount(ap_net_id_t id);
+extern uint16_t AP_ProgressiveItem(ap_net_id_t id);
 
 extern int32_t AP_CheckLocation(ap_location_t loc);
 

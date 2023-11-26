@@ -234,7 +234,7 @@ typedef struct {
     int32_t dn_388;
 
     int8_t crouch_toggle;
-    int8_t padding_[1];
+    int8_t steroids_on;  // [AP] Convenient padding byte we can use for steroid status
 } DukePlayer_t;
 
 // KEEPINSYNC lunatic/_defs_game.lua

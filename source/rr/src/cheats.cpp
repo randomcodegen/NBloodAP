@@ -763,6 +763,7 @@ void G_DoCheats(void)
 
                 case CHEAT_HYPER:
                     pPlayer->inv_amount[GET_STEROIDS] = 399;
+                    pPlayer->steroids_on = 1;
                     if (!RR)
                         pPlayer->inv_amount[GET_HEATS] = 1200;
                     P_DoQuote(QUOTE_CHEAT_STEROIDS, pPlayer);

@@ -289,11 +289,21 @@ static inline bool item_for_current_level(Json::Value& info)
     return item_for_level(info, ud.level_number, ud.volume_number);
 }
 
-/* Apply whatever item we just got to our current game state */
-static void ap_get_item(Json::Value item_info, bool silent)
+static inline int64_t json_get_int(Json::Value& val, int64_t def)
 {
-    silent |= item_info["silent"].asBool();
-    if (!silent)
+    return val.isInt() ? val.asInt() : def;
+}
+
+// Track inventory unlock state. There might be a better solution to this?
+static uint8_t inv_available[GET_MAX];
+static uint16_t inv_capacity[GET_MAX];
+
+/* Apply whatever item we just got to our current game state */
+static void ap_get_item(ap_net_id_t item_id, bool silent)
+{
+    Json::Value item_info = ap_item_info[item_id];
+    bool notify = !(silent || item_info["silent"].asBool());
+    if (notify)
         AP_Printf(("Got Item: " + item_info["name"].asString()).c_str());
         // Ensure message gets displayed, even though it reuses the same quote id
         item_quote_tmp = "Received " + item_info["name"].asString();
@@ -301,9 +311,22 @@ static void ap_get_item(Json::Value item_info, bool silent)
         ACTIVE_PLAYER->ftq = 0;
         P_DoQuote(AP_RECEIVE_ITEM_QUOTE, ACTIVE_PLAYER);
 
-    std::string item_type =item_info["type"].asString();
+    std::string item_type = item_info["type"].asString();
     // Poor man's switch
-    if (item_type == "key" && item_for_current_level(item_info))
+    if (item_type == "progressive")
+    {
+        // Add to our progressive counter and check how many we have now
+        uint16_t prog_count = AP_ProgressiveItem(item_id);
+        // And apply whatever item we have next in the queue
+        if (item_info["items"].isArray() && item_info["items"].size() > 0)
+        {
+            // Repeat the last entry if we have more copies
+            uint16_t idx = (item_info["items"].size() < prog_count ? item_info["items"].size() : prog_count) - 1;
+            ap_net_id_t next_item = AP_NET_ID(json_get_int(item_info["items"][idx], 0));
+            ap_get_item(next_item, silent);
+        }
+    }
+    else if (item_type == "key" && item_for_current_level(item_info))
     {
         // Key is for current level, apply
         // Lower 3 bits match the flags we have on access cards
@@ -322,6 +345,71 @@ static void ap_get_item(Json::Value item_info, bool silent)
         ud.showallmap = 1;
         Bmemset(show2dsector, 0xFF, 512);
     }
+    else if (item_type == "weapon")
+    {
+        int64_t weaponnum = json_get_int(item_info["weaponnum"], 0);
+        if (weaponnum >= MAX_WEAPONS) return;  // Limit to valid weapons
+        bool had_weapon = ACTIVE_PLAYER->gotweapon & (1 << weaponnum);
+        ACTIVE_PLAYER->gotweapon |= (1 << weaponnum);
+        // If it's a new unlock, switch to it
+        if (notify && !had_weapon)
+        {
+            ACTIVE_PLAYER->last_weapon = ACTIVE_PLAYER->curr_weapon;
+            ACTIVE_PLAYER->curr_weapon = weaponnum;
+        }
+        P_AddAmmo(ACTIVE_PLAYER, json_get_int(item_info["weaponnum"], 0), json_get_int(item_info["ammo"], 0));
+    }
+    else if (item_type == "maxammo")
+    {
+        int64_t weaponnum = json_get_int(item_info["weaponnum"], 0);
+        if (weaponnum >= MAX_WEAPONS) return;  // Limit to valid weapons
+        ACTIVE_PLAYER->max_ammo_amount[weaponnum] += json_get_int(item_info["ammo"], 0);
+        P_AddAmmo(ACTIVE_PLAYER, weaponnum, json_get_int(item_info["ammo"], 0));
+    }
+    else if (item_type == "inventory")
+    {
+        int64_t invnum = json_get_int(item_info["invnum"], -1);
+        if (invnum < 0 || invnum >= GET_MAX) return;  // Limit to valid slots
+
+        // Add capacity
+        ACTIVE_PLAYER->inv_amount[invnum] += json_get_int(item_info["capacity"], 0);
+        // Also use stored min capacity
+        ACTIVE_PLAYER->inv_amount[invnum] += inv_capacity[invnum];
+        inv_capacity[invnum] = 0;
+        // Mark as unlocked
+        inv_available[invnum] = 1;
+
+        // Saturate
+        int64_t max_capacity = json_get_int(item_info["max_capacity"], -1);
+        if (max_capacity >= 0 && ACTIVE_PLAYER->inv_amount[invnum] > max_capacity)
+            ACTIVE_PLAYER->inv_amount[invnum] = max_capacity;
+
+        // And display item
+        if (notify)
+            ACTIVE_PLAYER->inven_icon = inv_to_icon[invnum];
+    }
+    else if (item_type == "invcapacity")
+    {
+        int64_t invnum = json_get_int(item_info["invnum"], -1);
+        if (invnum < 0 || invnum >= GET_MAX) return;  // Limit to valid slots
+
+        // If the item is not unlocked yet, just add it to the min capacity
+        if (!inv_available[invnum])
+            inv_capacity[invnum] += json_get_int(item_info["capacity"], 0);
+        else
+        {
+            // Inventory item unlocked, just increase capacity
+            ACTIVE_PLAYER->inv_amount[invnum] += json_get_int(item_info["capacity"], 0);
+            // Saturate
+            int64_t max_capacity = json_get_int(item_info["max_capacity"], -1);
+            if (max_capacity >= 0 && ACTIVE_PLAYER->inv_amount[invnum] > max_capacity)
+                ACTIVE_PLAYER->inv_amount[invnum] = max_capacity;
+
+            // And display item
+            if (notify)
+                ACTIVE_PLAYER->inven_icon = inv_to_icon[invnum];
+        }
+    }
 }
 
 void ap_process_event_queue(void)
@@ -331,17 +419,49 @@ void ap_process_event_queue(void)
     {
         ap_net_id_t item_id = ap_item_queue.front();
         ap_item_queue.erase(ap_item_queue.begin());
-        ap_get_item(ap_item_info[item_id], false);
+        ap_get_item(item_id, false);
     }
+}
+
+/* Configures the default inventory state */
+static void ap_set_default_inv(void)
+{
+    // Clear inventory info
+    for (uint8_t i = 0; i < GET_MAX; i++)
+    {
+        inv_capacity[i] = 0;
+        inv_available[i] = 0;
+    }
+    // ToDo use dynamic settings from AP seed
+    // Always have mighty foot and pistol
+    ACTIVE_PLAYER->gotweapon = 3;
+    // Always have pistol ammo
+    ACTIVE_PLAYER->ammo_amount[PISTOL_WEAPON__STATIC] = 48;
+    // Set default max ammo amounts
+    ACTIVE_PLAYER->max_ammo_amount[PISTOL_WEAPON__STATIC] = 60;
+    ACTIVE_PLAYER->max_ammo_amount[SHOTGUN_WEAPON__STATIC] = 20;
+    ACTIVE_PLAYER->max_ammo_amount[CHAINGUN_WEAPON__STATIC] = 100;
+    ACTIVE_PLAYER->max_ammo_amount[RPG_WEAPON__STATIC] = 5;
+    ACTIVE_PLAYER->max_ammo_amount[HANDBOMB_WEAPON__STATIC] = 5;
+    ACTIVE_PLAYER->max_ammo_amount[SHRINKER_WEAPON__STATIC] = 5;
+    ACTIVE_PLAYER->max_ammo_amount[DEVISTATOR_WEAPON__STATIC] = 25;
+    ACTIVE_PLAYER->max_ammo_amount[TRIPBOMB_WEAPON__STATIC] = 3;
+    ACTIVE_PLAYER->max_ammo_amount[FREEZE_WEAPON__STATIC] = 50;
+    ACTIVE_PLAYER->max_ammo_amount[GROW_WEAPON__STATIC] = 5;
 }
 
 void ap_sync_inventory(void)
 {
+    // Reset the count of each progressive item we've processed
+    ap_game_state.progressive.clear();
+
+    ap_set_default_inv();
+
     // Apply state for all persistent items we have unlocked
     for (auto item_pair : ap_game_state.persistent)
     {
         for(unsigned int i = 0; i < item_pair.second; i++)
-            ap_get_item(ap_item_info[item_pair.first], true);
+            ap_get_item(item_pair.first, true);
     }
 }
 

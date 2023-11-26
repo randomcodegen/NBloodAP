@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "duke3d.h"
 #include "compat.h"
 #include "sbar.h"
+#include "ap_integration.h"
 
 int32_t althud_flashing = 1;
 int32_t althud_numbertile = 2930;
@@ -114,7 +115,7 @@ static void G_PatchStatusBar2(int32_t x1, int32_t y1, int32_t x2, int32_t y2)
 
 // Draws inventory numbers in the HUD for both the full and mini status bars.
 // yofs: in hud_scale-independent, (<<16)-scaled, 0-200-normalized y coords.
-static void G_DrawInvNum(int32_t x, int32_t yofs, int32_t y, char num1, char ha, int32_t sbits)
+static void G_DrawInvNum(int32_t x, int32_t yofs, int32_t y, int32_t num1, char ha, int32_t sbits)
 {
     char dabuf[16];
     int32_t shd = (x < 0);
@@ -130,6 +131,23 @@ static void G_DrawInvNum(int32_t x, int32_t yofs, int32_t y, char num1, char ha,
 
     if (sbits & RS_ALIGN_R)
     {
+        if (num1 > 999)
+        {
+            if (shd && ud.screen_size == 4 && videoGetRenderMode() >= REND_POLYMOST && althud_shadows)
+            {
+                rotatesprite_fs(sbarxr(x+8+1), RR ? sby : sbyp1, sbscale, 0, font+dabuf[0]-'0', 127, 4, POLYMOSTTRANS|sbits);
+                rotatesprite_fs(sbarxr(x+4+1), sbyp1, sbscale, 0, font+dabuf[1]-'0', 127, 4, POLYMOSTTRANS|sbits);
+                rotatesprite_fs(sbarxr(x-1), sbyp1, sbscale, 0, font+dabuf[2]-'0', 127, 4, POLYMOSTTRANS|sbits);
+                rotatesprite_fs(sbarxr(x-4+1), sbyp1, sbscale, 0, font+dabuf[3]-'0', 127, 4, POLYMOSTTRANS|sbits);
+            }
+
+            rotatesprite_fs(sbarxr(x+8), RR ? sbym1 : sby, sbscale, 0, font+dabuf[0]-'0', ha, 0, sbits);
+            rotatesprite_fs(sbarxr(x+4), sby, sbscale, 0, font+dabuf[1]-'0', ha, 0, sbits);
+            rotatesprite_fs(sbarxr(x), sby, sbscale, 0, font+dabuf[2]-'0', ha, 0, sbits);
+            rotatesprite_fs(sbarxr(x-4), sby, sbscale, 0, font+dabuf[3]-'0', ha, 0, sbits);
+            return;
+        }
+
         if (num1 > 99)
         {
             if (shd && ud.screen_size == 4 && videoGetRenderMode() >= REND_POLYMOST && althud_shadows)
@@ -160,6 +178,23 @@ static void G_DrawInvNum(int32_t x, int32_t yofs, int32_t y, char num1, char ha,
 
         rotatesprite_fs(sbarxr(x-4+1), sbyp1, sbscale, 0, font+dabuf[0]-'0', ha, 4, sbits);
         rotatesprite_fs(sbarxr(x-4), sby, sbscale, 0, font+dabuf[0]-'0', ha, 0, sbits);
+        return;
+    }
+
+    if (num1 > 999)
+    {
+        if (shd && ud.screen_size == 4 && videoGetRenderMode() >= REND_POLYMOST && althud_shadows)
+        {
+            rotatesprite_fs(sbarx(x-8+1), RR ? sby : sbyp1, sbscale, 0, font+dabuf[0]-'0', 127, 4, POLYMOSTTRANS|sbits);
+            rotatesprite_fs(sbarx(x-4+1), sbyp1, sbscale, 0, font+dabuf[1]-'0', 127, 4, POLYMOSTTRANS|sbits);
+            rotatesprite_fs(sbarx(x+1), sbyp1, sbscale, 0, font+dabuf[2]-'0', 127, 4, POLYMOSTTRANS|sbits);
+            rotatesprite_fs(sbarx(x+4+1), sbyp1, sbscale, 0, font+dabuf[3]-'0', 127, 4, POLYMOSTTRANS|sbits);
+        }
+
+        rotatesprite_fs(sbarx(x-8), RR ? sbym1 : sby, sbscale, 0, font+dabuf[0]-'0', ha, 0, sbits);
+        rotatesprite_fs(sbarx(x-4), sby, sbscale, 0, font+dabuf[1]-'0', ha, 0, sbits);
+        rotatesprite_fs(sbarx(x), sby, sbscale, 0, font+dabuf[2]-'0', ha, 0, sbits);
+        rotatesprite_fs(sbarx(x+4), sby, sbscale, 0, font+dabuf[3]-'0', ha, 0, sbits);
         return;
     }
 
@@ -551,6 +586,7 @@ void G_DrawFrags(void)
     }
 }
 
+// [AP] Just use raw numbers in AP mode
 static int32_t G_GetInvAmount(const DukePlayer_t *p)
 {
     switch (p->inven_icon)
@@ -558,20 +594,20 @@ static int32_t G_GetInvAmount(const DukePlayer_t *p)
     case ICON_FIRSTAID:
         return p->inv_amount[GET_FIRSTAID];
     case ICON_STEROIDS:
-        return (p->inv_amount[GET_STEROIDS]+3)>>2;
+        return AP ? p->inv_amount[GET_STEROIDS] : (p->inv_amount[GET_STEROIDS]+3)>>2;
     case ICON_HOLODUKE:
-        if (RR) return p->inv_amount[GET_HOLODUKE]/400;
-        return (p->inv_amount[GET_HOLODUKE]+15)/24;
+        if (RR) return AP ? p->inv_amount[GET_HOLODUKE] : p->inv_amount[GET_HOLODUKE]/400;
+        return AP ? p->inv_amount[GET_HOLODUKE] : (p->inv_amount[GET_HOLODUKE]+15)/24;
     case ICON_JETPACK:
-        if (RR) return p->inv_amount[GET_JETPACK]/100;
-        return (p->inv_amount[GET_JETPACK]+15)>>4;
+        if (RR) return AP ? p->inv_amount[GET_JETPACK] : p->inv_amount[GET_JETPACK]/100;
+        return AP ? p->inv_amount[GET_JETPACK] : (p->inv_amount[GET_JETPACK]+15)>>4;
     case ICON_HEATS:
-        return p->inv_amount[GET_HEATS]/12;
+        return AP ? p->inv_amount[GET_HEATS] : p->inv_amount[GET_HEATS]/12;
     case ICON_SCUBA:
-        return (p->inv_amount[GET_SCUBA]+63)>>6;
+        return AP ? p->inv_amount[GET_SCUBA] : (p->inv_amount[GET_SCUBA]+63)>>6;
     case ICON_BOOTS:
-        if (RR) return (p->inv_amount[GET_BOOTS]/10)>>1;
-        return p->inv_amount[GET_BOOTS]>>1;
+        if (RR) return AP ? p->inv_amount[GET_BOOTS] : (p->inv_amount[GET_BOOTS]/10)>>1;
+        return AP ? p->inv_amount[GET_BOOTS] : p->inv_amount[GET_BOOTS]>>1;
     }
 
     return -1;
@@ -608,6 +644,9 @@ static int32_t G_GetInvOn(const DukePlayer_t *p)
         return p->jetpack_on;
     case ICON_HEATS:
         return p->heat_on;
+    case ICON_STEROIDS:
+        if (AP)
+            return p->steroids_on;
     }
 
     return 0x80000000;
@@ -776,7 +815,7 @@ void G_DrawStatusBar(int32_t snum)
 
                     i = G_GetInvAmount(p);
 
-                    G_DrawInvNum(320-(284-30-o+85), 0, hudoffset-6-3, (uint8_t) i, 0, 10+permbit+512);
+                    G_DrawInvNum(320-(284-30-o+85), 0, hudoffset-6-3, i, 0, 10+permbit+512);
 
                     if (p->inven_icon >= ICON_SCUBA)
                     {
@@ -888,9 +927,9 @@ void G_DrawStatusBar(int32_t snum)
                     j = G_GetInvOn(p);
 
                     if (REALITY)
-                        G_DrawInvNum(-(284-30+7-o), 0, hudoffset-6-3-2, (uint8_t) i, 0, 10+permbit+256);
+                        G_DrawInvNum(-(284-30+7-o), 0, hudoffset-6-3-2, i, 0, 10+permbit+256);
                     else
-                        G_DrawInvNum(-(284-30-o), 0, hudoffset-6-3, (uint8_t) i, 0, 10+permbit+256);
+                        G_DrawInvNum(-(284-30-o), 0, hudoffset-6-3, i, 0, 10+permbit+256);
 
                     if (REALITY)
                     {
@@ -1008,7 +1047,7 @@ void G_DrawStatusBar(int32_t snum)
                         minitext(292-30-o+10, 190, "%", 0, orient);
                     i = G_GetInvAmount(p);
 
-                    G_DrawInvNum(284-30-o+8, yofssh, 200-6, (uint8_t) i, 0, orient&~16);
+                    G_DrawInvNum(284-30-o+8, yofssh, 200-6, i, 0, orient&~16);
 
                     minitext_yofs = 0;
                 }
@@ -1052,7 +1091,7 @@ void G_DrawStatusBar(int32_t snum)
                     i = G_GetInvAmount(p);
                     j = G_GetInvOn(p);
 
-                    G_DrawInvNum(284-30-o, yofssh, 200-6, (uint8_t) i, 0, orient&~16);
+                    G_DrawInvNum(284-30-o, yofssh, 200-6, i, 0, orient&~16);
 
                     if (!WW2GI)
                     {
@@ -1341,7 +1380,7 @@ void G_DrawStatusBar(int32_t snum)
                 // XXX: i < 0?
                 if (RR)
                 {
-                    if (i == FIRSTAID_ICON || i == STEROIDS_ICON)
+                    if (!AP && (i == FIRSTAID_ICON || i == STEROIDS_ICON))
                         minitext(214-o+2, SBY+24, "%", 0, 10+16+permbit  + ROTATESPRITE_MAX);
                     if (i == AIRTANK_ICON)
                         rotatesprite_fs(sbarx(183-o), sbary(SBY+10), sb15, 0, i, 0, 0, 10+16+permbit);
@@ -1355,7 +1394,8 @@ void G_DrawStatusBar(int32_t snum)
                 else
                 {
                     rotatesprite_fs(sbarx(231-o), sbary(SBY+13), sb16, 0, i, 0, 0, 10+16+permbit);
-                    minitext(292-30-o, SBY+24, "%", 6, 10+16+permbit + ROTATESPRITE_MAX);
+                    if(!AP)
+                        minitext(292-30-o, SBY+24, "%", 6, 10+16+permbit + ROTATESPRITE_MAX);
                     if (p->inven_icon >= ICON_SCUBA) minitext(284-35-o, SBY+14, "Auto", 2, 10+16+permbit + ROTATESPRITE_MAX);
                 }
             }
@@ -1374,7 +1414,7 @@ void G_DrawStatusBar(int32_t snum)
             if (u&8192)
             {
                 i = G_GetInvAmount(p);
-                G_DrawInvNum((RR ? 206 : (284-30))-o, 0, SBY+28, (uint8_t) i, 0, 10+permbit);
+                G_DrawInvNum((RR ? 206 : (284-30))-o, 0, SBY+28, i, 0, 10+permbit);
             }
         }
     }

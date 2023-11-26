@@ -9,7 +9,7 @@ uint8_t ap_game_id = 0;
 Json::Value ap_game_config;
 
 ap_location_state_t ap_locations[AP_MAX_LOCATION];
-ap_state_t ap_game_state = { std::map<ap_net_id_t, uint16_t>() };
+ap_state_t ap_game_state = { std::map<ap_net_id_t, uint16_t>(), std::map<ap_net_id_t, uint16_t>() };
 std::map<ap_net_id_t, Json::Value> ap_item_info;
 std::vector<ap_net_id_t> ap_item_queue;
 
@@ -192,6 +192,15 @@ uint16_t AP_ItemCount(ap_net_id_t id)
 bool AP_HasItem(ap_net_id_t id)
 {
     return AP_ItemCount(id) > 0;
+}
+
+/* Increments the progressive count for an item in the state and returns the current total count */
+uint16_t AP_ProgressiveItem(ap_net_id_t id)
+{
+    uint16_t count = ap_game_state.progressive.count(id) ? ap_game_state.progressive[id] : 0;
+    count++;
+    ap_game_state.progressive[id] = count;
+    return count;
 }
 
 void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection)
