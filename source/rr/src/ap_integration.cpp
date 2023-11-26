@@ -121,29 +121,195 @@ static void ap_map_patch_sprites(void)
 
 #ifdef AP_DEBUG_ON
 /* Helps with finding secrets and spawning cans for location definition */
-static void print_secret_sectors_and_cans()
+static void print_debug_level_info()
 {
     std::stringstream out;
-    out << "Secret sectors for " << current_map() << ":";
+    out << "Secret sectors for " << current_map() << ":\n";
     int32_t i;
     for (i = 0; i < numsectors; i++)
     {
         if (sector[i].lotag == 32767) {
-            out << " " << i << ",";
+            out << "    " << i << "\n";
         }
     }
     AP_Debugf(out.str().c_str());
 
     out = std::stringstream();
-    out << "Trash cans for " << current_map() << ":";
+    out << "Trash cans for " << current_map() << ":\n";
     for (i = 0; i < Numsprites; i++)
     {
-        if (sprite[i].picnum == 1232)
+        if (sprite[i].picnum == CANWITHSOMETHING__STATIC)
         {
-            out << " " << i << " with " << sprite[i].lotag << ",";
+            out << "    " << i << " with " << sprite[i].lotag << "\n";
         }
     }
     AP_Debugf(out.str().c_str());
+
+    out = std::stringstream();
+    out << "Missed Locations for " << current_map() << ":\n";
+    for (i = 0; i < Numsprites; i++)
+    {
+        switch (sprite[i].picnum)
+        {
+        case CHAINGUNSPRITE__STATIC:
+        case RPGSPRITE__STATIC:
+        case FREEZESPRITE__STATIC:
+        case SHRINKERSPRITE__STATIC:
+        case TRIPBOMBSPRITE__STATIC:
+        case SHOTGUNSPRITE__STATIC:
+        case DEVISTATORSPRITE__STATIC:
+        case HBOMBAMMO__STATIC:
+        case FIRSTAID__STATIC:
+        case SHIELD__STATIC:
+        case STEROIDS__STATIC:
+        case AIRTANK__STATIC:
+        case JETPACK__STATIC:
+        case HEATSENSOR__STATIC:
+        case ACCESSCARD__STATIC:
+        case BOOTS__STATIC:
+        case ATOMICHEALTH__STATIC:
+        case HOLODUKE__STATIC:
+            out << "    " << i << " of type " << sprite[i].picnum << " at x: " << sprite[i].x << " y: " << sprite[i].y;
+            if (sprite[i].pal != 0)
+                out << " (MP only)";
+            out << "\n";
+            break;
+        }
+    }
+    AP_Debugf(out.str().c_str());
+    OutputDebugString(out.str().c_str());
+}
+
+// Prints a level template json for filling in location names
+static void print_level_template(void)
+{
+    Json::Value out;
+
+    for (unsigned int i = 0; i < Numsprites; i++)
+    {
+        switch (sprite[i].picnum)
+        {
+        case CHAINGUNSPRITE__STATIC:
+        case RPGSPRITE__STATIC:
+        case FREEZESPRITE__STATIC:
+        case SHRINKERSPRITE__STATIC:
+        case TRIPBOMBSPRITE__STATIC:
+        case SHOTGUNSPRITE__STATIC:
+        case DEVISTATORSPRITE__STATIC:
+        case HBOMBAMMO__STATIC:
+        case FIRSTAID__STATIC:
+        case SHIELD__STATIC:
+        case STEROIDS__STATIC:
+        case AIRTANK__STATIC:
+        case JETPACK__STATIC:
+        case HEATSENSOR__STATIC:
+        case BOOTS__STATIC:
+        case ATOMICHEALTH__STATIC:
+        case HOLODUKE__STATIC:
+        case MONK__STATIC:
+        case CANWITHSOMETHING2__STATIC:
+            out[std::to_string(i)]["id"] = (sprite[i].pal == 0 ? 1 : -1);
+            out[std::to_string(i)]["name"] = (sprite[i].pal == 0 ? "" : "MP ");
+            break;
+        }
+
+        bool has_relevant_content = false;
+        switch (sprite[i].lotag)
+        {
+        case CHAINGUNSPRITE__STATIC:
+        case RPGSPRITE__STATIC:
+        case FREEZESPRITE__STATIC:
+        case SHRINKERSPRITE__STATIC:
+        case TRIPBOMBSPRITE__STATIC:
+        case SHOTGUNSPRITE__STATIC:
+        case DEVISTATORSPRITE__STATIC:
+        case HBOMBAMMO__STATIC:
+        case FIRSTAID__STATIC:
+        case SHIELD__STATIC:
+        case STEROIDS__STATIC:
+        case AIRTANK__STATIC:
+        case JETPACK__STATIC:
+        case HEATSENSOR__STATIC:
+        case BOOTS__STATIC:
+        case ATOMICHEALTH__STATIC:
+        case ACCESSCARD__STATIC:
+        case HOLODUKE__STATIC:
+            has_relevant_content = true;
+            break;
+        }
+
+        switch (sprite[i].picnum)
+        {
+        case CHAINGUNSPRITE__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Chaingun";
+            break;
+        case RPGSPRITE__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "RPG";
+            break;
+        case FREEZESPRITE__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Freezethrower";
+            break;
+        case SHRINKERSPRITE__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Shrinker";
+            break;
+        case TRIPBOMBSPRITE__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Tripbomb";
+            break;
+        case SHOTGUNSPRITE__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Shotgun";
+            break;
+        case DEVISTATORSPRITE__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Devastator";
+            break;
+        case HBOMBAMMO__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Pipebombs";
+            break;
+        case FIRSTAID__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Medkit";
+            break;
+        case SHIELD__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Armor";
+            break;
+        case STEROIDS__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Steroids";
+            break;
+        case AIRTANK__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Scuba Gear";
+            break;
+        case JETPACK__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Jetpack";
+            break;
+        case HEATSENSOR__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Night Vision Goggles";
+            break;
+        case ACCESSCARD__STATIC:
+            out[std::to_string(i)]["id"] = 1;
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + (sprite[i].pal == 0 ? "Blue " : (sprite[i].pal == 21 ? "Red " : "Yellow ")) + "Key Card";
+            break;
+        case BOOTS__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Protective Boots";
+            break;
+        case ATOMICHEALTH__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Atomic Health";
+            break;
+        case HOLODUKE__STATIC:
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Holo Duke";
+            break;
+        case MONK__STATIC:
+            if (!has_relevant_content) break;
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Monk";
+            out[std::to_string(i)]["type"] = "monk";
+            break;
+        case CANWITHSOMETHING2__STATIC:
+            if (!has_relevant_content) break;
+            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Trash Can";
+            out[std::to_string(i)]["type"] = "trashcan";
+            break;
+        }
+    }
+
+    Json::FastWriter writer;
+    OutputDebugString(writer.write(out).c_str());
 }
 #endif
 
@@ -482,7 +648,8 @@ void ap_on_map_load(void)
 
     ap_mark_known_secret_sectors();
 #ifdef AP_DEBUG_ON
-    print_secret_sectors_and_cans();
+    print_debug_level_info();
+    print_level_template();
 #endif
 }
 
