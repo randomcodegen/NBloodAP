@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define actors_c_
 
 #include "duke3d.h"
+#include "ap_integration.h"
 
 #if KRANDDEBUG
 # define ACTOR_STATIC
@@ -6250,7 +6251,7 @@ DETONATEB:
                             P_AddAmmo(pPlayer, RPG_WEAPON, 1);
                         A_PlaySound(REALITY ? 167 : DUKE_GET, pPlayer->i);
 
-                        if ((pPlayer->gotweapon & (1<<HANDBOMB_WEAPON)) == 0 || pSprite->owner == pPlayer->i)
+                        if (!AP && ((pPlayer->gotweapon & (1<<HANDBOMB_WEAPON)) == 0 || pSprite->owner == pPlayer->i))
                             P_AddWeapon(pPlayer, HANDBOMB_WEAPON);
 
                         if (sprite[pSprite->owner].picnum != APLAYER)

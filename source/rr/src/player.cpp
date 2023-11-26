@@ -7161,7 +7161,7 @@ static int P_DoFist(DukePlayer_t *pPlayer)
     {
         if (REALITY)
             pPlayer->timebeforeexit = 17;
-        else if (pPlayer->buttonpalette && ud.from_bonus == 0)
+        else if (!AP && pPlayer->buttonpalette && ud.from_bonus == 0)
         {
             for (bssize_t TRAVERSE_CONNECT(playerNum))
                 g_player[playerNum].ps->gm = MODE_EOL;

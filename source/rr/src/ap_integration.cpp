@@ -120,8 +120,8 @@ static void ap_map_patch_sprites(void)
 }
 
 #ifdef AP_DEBUG_ON
-/* Helps with finding secrets for location definition */
-static void print_secret_sectors()
+/* Helps with finding secrets and spawning cans for location definition */
+static void print_secret_sectors_and_cans()
 {
     std::stringstream out;
     out << "Secret sectors for " << current_map() << ":";
@@ -130,6 +130,17 @@ static void print_secret_sectors()
     {
         if (sector[i].lotag == 32767) {
             out << " " << i << ",";
+        }
+    }
+    AP_Debugf(out.str().c_str());
+
+    out = std::stringstream();
+    out << "Trash cans for " << current_map() << ":";
+    for (i = 0; i < Numsprites; i++)
+    {
+        if (sprite[i].picnum == 1232)
+        {
+            out << " " << i << " with " << sprite[i].lotag << ",";
         }
     }
     AP_Debugf(out.str().c_str());
@@ -471,7 +482,7 @@ void ap_on_map_load(void)
 
     ap_mark_known_secret_sectors();
 #ifdef AP_DEBUG_ON
-    print_secret_sectors();
+    print_secret_sectors_and_cans();
 #endif
 }
 
