@@ -105,6 +105,7 @@ static void ap_map_patch_sprites(void)
             // Have a sprite that should become an AP Pickup
             sprite[i].lotag  = sprite_location;
             sprite[i].picnum = AP_LOCATION_PROGRESSION(sprite_location) ? AP_PROG__STATIC : AP_ITEM__STATIC;
+            bitmap_set(show2dsprite, i);
         }
         else
         {
@@ -277,6 +278,17 @@ void ap_initialize(void)
     }
 }
 
+// Safe check if an item is scoped to a level
+static inline bool item_for_level(Json::Value& info, uint8_t level, uint8_t volume)
+{
+    return (info["levelnum"].isInt() && (info["levelnum"].asInt() == level)) && (info["volumenum"].isInt() && (info["volumenum"].asInt() == level));
+}
+
+static inline bool item_for_current_level(Json::Value& info)
+{
+    return item_for_level(info, ud.level_number, ud.volume_number);
+}
+
 /* Apply whatever item we just got to our current game state */
 static void ap_get_item(Json::Value item_info, bool silent)
 {
@@ -291,21 +303,24 @@ static void ap_get_item(Json::Value item_info, bool silent)
 
     std::string item_type =item_info["type"].asString();
     // Poor man's switch
-    if (item_type == "key")
+    if (item_type == "key" && item_for_current_level(item_info))
     {
-        if (ud.level_number == item_info["levelnum"].asInt() && ud.volume_number == item_info["volumenum"].asInt())
+        // Key is for current level, apply
+        // Lower 3 bits match the flags we have on access cards
+        uint8_t key_flag = item_info["flags"].asInt();
+        ACTIVE_PLAYER->got_access |= (key_flag & 0x7);
+        // Remaining flags are for RR keys
+        for (uint8_t i = 0; i < 5; i++)
         {
-            // Key is for current level, apply
-            // Lower 3 bits match the flags we have on access cards
-            uint8_t key_flag = item_info["flags"].asInt();
-            ACTIVE_PLAYER->got_access |= (key_flag & 0x7);
-            // Remaining flags are for RR keys
-            for (uint8_t i = 0; i < 5; i++)
-            {
-                if (key_flag & (1 << (i + 2)))
-                    ACTIVE_PLAYER->keys[i] = 1;
-            }
+            if (key_flag & (1 << (i + 2)))
+                ACTIVE_PLAYER->keys[i] = 1;
         }
+    }
+    else if (item_type == "automap" && item_for_current_level(item_info))
+    {
+        // Enable all sectors
+        ud.showallmap = 1;
+        Bmemset(show2dsector, 0xFF, 512);
     }
 }
 

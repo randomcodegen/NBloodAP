@@ -133,6 +133,7 @@ void AP_SendLocationScouts_Compat(std::vector<int64_t> const& locations, int cre
 
         temp.flags = ap_comp_loc_infos[loc_id].flags;
         temp.item = ap_comp_loc_infos[loc_id].item;
+        temp.location = loc_id;
         temp.locationName = AP_GetLocationName_Compat(loc_id);
 
         items.push_back(temp);

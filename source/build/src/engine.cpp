@@ -10563,7 +10563,8 @@ void renderDrawMapView(int32_t dax, int32_t day, int32_t zoome, int16_t ang)
                 if (sprite[i].cstat & 32768)
                     continue;
 
-                if (sprite[i].cstat & CSTAT_SPRITE_ALIGNMENT_FLOOR)
+                // [AP] Also explicitly draw all sprites we have marked for drawing on the map
+                if ((sprite[i].cstat & CSTAT_SPRITE_ALIGNMENT_FLOOR) || bitmap_test(show2dsprite, i))
                 {
                     if ((sprite[i].cstat & (64 + 8)) == (64 + 8))
                         continue;
@@ -10675,7 +10676,8 @@ void renderDrawMapView(int32_t dax, int32_t day, int32_t zoome, int16_t ang)
     for (s=sortnum-1; s>=0; s--)
     {
         auto const spr = (uspritetype * )&sprite[tsprite[s].owner];
-        if (spr->cstat & CSTAT_SPRITE_ALIGNMENT_FLOOR)
+        // [AP] Also explicitly draw all sprites we have marked for drawing on the map
+        if ((spr->cstat & CSTAT_SPRITE_ALIGNMENT_FLOOR) || bitmap_test(show2dsprite, spr->owner))
         {
             const int32_t xspan = tilesiz[spr->picnum].x;
             const int32_t yspan = tilesiz[spr->picnum].y;
