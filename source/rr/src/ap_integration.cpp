@@ -15,6 +15,13 @@
 
 uint8_t ap_return_to_menu = 0;
 
+// Convenience access to player struct
+#define ACTIVE_PLAYER g_player[myconnectindex].ps
+
+static std::string item_quote_tmp;
+
+#define AP_RECEIVE_ITEM_QUOTE 5120
+
 static inline ap_location_t safe_location_id(Json::Value& val)
 {
     if (val.isInt())
@@ -22,17 +29,22 @@ static inline ap_location_t safe_location_id(Json::Value& val)
     return -1;
 }
 
-// Current map name in format eXlY
-static std::string current_map(void)
+// Map name in format EYLX[X]
+std::string ap_format_map_id(uint8_t level_number, uint8_t volume_number)
 {
-    if(ud.m_level_number == 7 && ud.m_volume_number == 0)
+    if(level_number == 7 && volume_number == 0)
     {
         // user map. Not sure we want to support this in general, but might as well do the right thing here
         return std::string(boardfilename);
     }
     std::stringstream tmp;
-    tmp << "E" << ud.volume_number + 1 << "L" << ud.level_number + 1;
+    tmp << "E" << volume_number + 1 << "L" << level_number + 1;
     return tmp.str();
+}
+
+static std::string current_map(void)
+{
+    return ap_format_map_id(ud.level_number, ud.volume_number);
 }
 
 static void ap_add_processor_sprite(void)
@@ -119,8 +131,7 @@ static void print_secret_sectors()
             out << " " << i << ",";
         }
     }
-    // ToDo find good way to print this
-    OSD_Printf(out.str().c_str());
+    AP_Debugf(out.str().c_str());
 }
 #endif
 
@@ -146,28 +157,13 @@ static void ap_mark_known_secret_sectors(void)
             {
                 // Already have this secret, disable the sector and mark it as collected
                 sector[i].lotag = 0;
-                g_player[myconnectindex].ps->secret_rooms++;
+                ACTIVE_PLAYER->secret_rooms++;
                 // Also increase the max secret count for this one as the sector will no longer be tallied when
                 // the map is processed further
-                g_player[myconnectindex].ps->max_secret_rooms++;
+                ACTIVE_PLAYER->max_secret_rooms++;
             }
         }
     }
-}
-
-void ap_on_map_load(void)
-{
-    ap_map_patch_sprites();
-
-    ap_mark_known_secret_sectors();
-#ifdef AP_DEBUG_ON
-    print_secret_sectors();
-#endif
-}
-
-void ap_on_save_load(void)
-{
-    ap_mark_known_secret_sectors();
 }
 
 /*
@@ -185,9 +181,16 @@ void ap_startup(void)
     G_AddGroup(customgrp);
     const char customcon[13] = "DUKE3DAP.CON";
     g_scriptNamePtr          = Xstrdup(customcon);
+
+    // This quote is managed dynamically by our code, so free the pre-allocated memory
+    if (apStrings[AP_RECEIVE_ITEM_QUOTE] != NULL)
+    {
+        Xfree(apStrings[AP_RECEIVE_ITEM_QUOTE]);
+        apStrings[AP_RECEIVE_ITEM_QUOTE] = NULL;
+    }
 }
 
-static Json::Value read_json_from_grp(const char* filename)
+Json::Value read_json_from_grp(const char* filename)
 {
     int kFile = kopen4loadfrommod(filename, 0);
 
@@ -211,63 +214,49 @@ static Json::Value read_json_from_grp(const char* filename)
     return ret;
 }
 
-std::string ap_active_episodes[MAXVOLUMES];
-uint8_t ap_active_episodes_volumenum[MAXVOLUMES];
-uint8_t ap_active_episode_count = 0;
-std::string ap_active_levels[MAXVOLUMES][MAXLEVELS];
-uint8_t ap_active_levels_count[MAXVOLUMES] = {0};
-uint8_t ap_active_levels_levelnum[MAXVOLUMES][MAXLEVELS] = {0};
-ap_net_id_t ap_active_levels_key[MAXVOLUMES][MAXLEVELS] = {0};
+std::string ap_episode_names[MAXVOLUMES] = { "" };
+std::vector<uint8_t> ap_active_episodes;
+std::vector<std::vector<uint8_t>> ap_active_levels;
+std::map<std::string, Json::Value> ap_level_data;
 
 void ap_parse_levels()
 {
+    ap_level_data.clear();
+    ap_active_episodes.clear();
+    ap_active_levels.clear();
+
     // Iterate over all episodes defined in the game config
     // JSON iteration can be out of order, use flags to keep things sequential
-    std::string tmp_episodes[MAXVOLUMES] = { "" };
-    std::string tmp_levels[MAXVOLUMES][MAXLEVELS] = { "" };
-    ap_net_id_t tmp_keys[MAXVOLUMES][MAXLEVELS]   = { 0 };
+    Json::Value tmp_levels[MAXVOLUMES][MAXLEVELS] = { 0 };
 
     for (std::string ep_id : ap_game_config["episodes"].getMemberNames())
     {
         uint8_t volume = ap_game_config["episodes"][ep_id]["volumenum"].asInt();
-        tmp_episodes[volume] = ap_game_config["episodes"][ep_id]["name"].asString();
+        ap_episode_names[volume] = ap_game_config["episodes"][ep_id]["name"].asString();
         for (std::string lev_id : ap_game_config["episodes"][ep_id]["levels"].getMemberNames())
         {
             uint8_t levelnum = ap_game_config["episodes"][ep_id]["levels"][lev_id]["levelnum"].asInt();
             if (AP_VALID_LOCATION(safe_location_id(ap_game_config["episodes"][ep_id]["levels"][lev_id]["exit"])))
             {
-                tmp_levels[volume][levelnum] = ap_game_config["episodes"][ep_id]["levels"][lev_id]["name"].asString();
-                tmp_keys[volume][levelnum] = ap_game_config["episodes"][ep_id]["levels"][lev_id]["key"].asInt();
+                ap_level_data[ap_format_map_id(levelnum, volume)] = ap_game_config["episodes"][ep_id]["levels"][lev_id];
             }
         }
     }
 
-    uint8_t episode_counter = 0;
-    uint8_t level_counter;
-    uint8_t ep_has_levels;
-
     // Now agregate and insert in correct order
     for(int i=0; i < MAXVOLUMES; i++) {
-        level_counter = 0;
-        ep_has_levels = 0;
+        std::vector<uint8_t> episode_active_levels;
         for (int j = 0; j < MAXLEVELS; j++) {
-            if (tmp_levels[i][j] != "") {
-                ep_has_levels = 1;
-                ap_active_levels_count[episode_counter]++;
-                ap_active_levels[episode_counter][level_counter] = tmp_levels[i][j];
-                ap_active_levels_levelnum[episode_counter][level_counter] = j;
-                ap_active_levels_key[episode_counter][level_counter] = tmp_keys[i][j];
-                level_counter++;
+            if (ap_level_data.count(ap_format_map_id(j, i))) {
+                episode_active_levels.push_back(j);
             }
         }
 
-        if (ep_has_levels)
+        if (episode_active_levels.size())
         {
-            ap_active_episode_count++;
-            ap_active_episodes[episode_counter] = tmp_episodes[i];
-            ap_active_episodes_volumenum[episode_counter] = i;
-            episode_counter++;
+            ap_active_episodes.push_back(i);
         }
+        ap_active_levels.push_back(episode_active_levels);
     }
 
 }
@@ -276,7 +265,10 @@ void ap_initialize(void)
 {
     Json::Value game_ap_config = read_json_from_grp("ap_config.json");
 
-    AP_Init(game_ap_config);
+    // ToDo get from settings window/cli
+    ap_connection_settings_t connection = {AP_LOCAL, "", "", "", "", "local_world.json"};
+
+    AP_Initialize(game_ap_config, connection);
 
     if (AP)
     {
@@ -285,9 +277,72 @@ void ap_initialize(void)
     }
 }
 
+/* Apply whatever item we just got to our current game state */
+static void ap_get_item(Json::Value item_info, bool silent)
+{
+    silent |= item_info["silent"].asBool();
+    if (!silent)
+        AP_Printf(("Got Item: " + item_info["name"].asString()).c_str());
+        // Ensure message gets displayed, even though it reuses the same quote id
+        item_quote_tmp = "Received " + item_info["name"].asString();
+        apStrings[AP_RECEIVE_ITEM_QUOTE] = (char *)item_quote_tmp.c_str();
+        ACTIVE_PLAYER->ftq = 0;
+        P_DoQuote(AP_RECEIVE_ITEM_QUOTE, ACTIVE_PLAYER);
+
+    std::string item_type =item_info["type"].asString();
+    // Poor man's switch
+    if (item_type == "key")
+    {
+        if (ud.level_number == item_info["levelnum"].asInt() && ud.volume_number == item_info["volumenum"].asInt())
+        {
+            // Key is for current level, apply
+            // Lower 3 bits match the flags we have on access cards
+            uint8_t key_flag = item_info["flags"].asInt();
+            ACTIVE_PLAYER->got_access |= (key_flag & 0x7);
+            // Remaining flags are for RR keys
+            for (uint8_t i = 0; i < 5; i++)
+            {
+                if (key_flag & (1 << (i + 2)))
+                    ACTIVE_PLAYER->keys[i] = 1;
+            }
+        }
+    }
+}
+
 void ap_process_event_queue(void)
 {
+    // Check for items in our queue to process
+    while (!ap_item_queue.empty())
+    {
+        ap_net_id_t item_id = ap_item_queue.front();
+        ap_item_queue.erase(ap_item_queue.begin());
+        ap_get_item(ap_item_info[item_id], false);
+    }
+}
 
+void ap_sync_inventory(void)
+{
+    // Apply state for all persistent items we have unlocked
+    for (auto item_pair : ap_game_state.persistent)
+    {
+        for(unsigned int i = 0; i < item_pair.second; i++)
+            ap_get_item(ap_item_info[item_pair.first], true);
+    }
+}
+
+void ap_on_map_load(void)
+{
+    ap_map_patch_sprites();
+
+    ap_mark_known_secret_sectors();
+#ifdef AP_DEBUG_ON
+    print_secret_sectors();
+#endif
+}
+
+void ap_on_save_load(void)
+{
+    ap_mark_known_secret_sectors();
 }
 
 void ap_check_secret(int16_t sectornum)
@@ -298,7 +353,7 @@ void ap_check_secret(int16_t sectornum)
 void ap_level_end(void)
 {
     // Return to menu after beating a level
-    g_player[myconnectindex].ps->gm = 0;
+    ACTIVE_PLAYER->gm = 0;
     Menu_Open(myconnectindex);
     Menu_Change(MENU_AP_LEVEL);
     ap_return_to_menu = 1;
@@ -306,20 +361,26 @@ void ap_level_end(void)
 
 void ap_check_exit(int16_t exitnum)
 {
-    ap_location_t exit_location = safe_location_id(ap_game_config["locations"][current_map()]["exit"][std::to_string(exitnum)]["id"]);
+    ap_location_t exit_location = safe_location_id(ap_game_config["locations"][current_map()]["exits"][std::to_string(exitnum)]["id"]);
     // Might not have a secret exit defined, so in this case treat as regular exit
     if (exit_location < 0)
-        exit_location = safe_location_id(ap_game_config["locations"][current_map()]["exit"][std::to_string(0)]["id"]);
+        exit_location = safe_location_id(ap_game_config["locations"][current_map()]["exits"][std::to_string(0)]["id"]);
     AP_CheckLocation(exit_location);
 }
 
 void ap_select_episode(uint8_t i)
 {
-    ud.m_volume_number = ap_active_episodes_volumenum[i];
+    ud.m_volume_number = ap_active_episodes[i];
 }
 
 void ap_select_level(uint8_t i)
 {
-    if (ud.m_volume_number <= ap_active_episode_count)
-        ud.m_level_number = ap_active_levels_levelnum[ud.m_volume_number][i];
+    ud.m_level_number = ap_active_levels[ud.m_volume_number][i];
+}
+
+void ap_shutdown(void)
+{
+    AP_LibShutdown();
+    // Fix our dynamically managed quote. The underlying c_str is managed by the string variable
+    apStrings[AP_RECEIVE_ITEM_QUOTE] = NULL;
 }

@@ -405,6 +405,10 @@ void G_GameExit(const char *msg)
     // JBF: fixes crash on demo playback
     // PK: modified from original
 
+    // [AP] Cleanup and write state information
+    if (AP)
+        ap_shutdown();
+
     if (!g_quickExit)
     {
         if (g_mostConcurrentPlayers > 1 && g_player[myconnectindex].ps->gm&MODE_GAME && GTFLAGS(GAMETYPE_SCORESHEET) && *msg == ' ')

@@ -9,6 +9,7 @@
 
 #include "stdint.h"
 #include <json/json.h>
+#include "ap_log.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -31,7 +32,7 @@ extern uint8_t ap_game_id;
 
 #define AP_VALID_LOCATION_ID(x) (x >= 0 && x < AP_MAX_LOCATION)
 #define AP_SHORT_LOCATION(x) ((ap_location_t)(x & AP_LOCATION_MASK))
-#define AP_NET_LOCATION(x) ((ap_net_id_t)(AP_SHORT_LOCATION(x) | ((ap_game_id & AP_GAME_ID_MASK) << AP_GAME_ID_SHIFT) | AP_BUILD_ID_PREFIX))
+#define AP_NET_ID(x) ((ap_net_id_t)(AP_SHORT_LOCATION(x) | ((ap_game_id & AP_GAME_ID_MASK) << AP_GAME_ID_SHIFT) | AP_BUILD_ID_PREFIX))
 
 typedef enum
 {
@@ -61,20 +62,52 @@ extern ap_location_state_t ap_locations[AP_MAX_LOCATION];  // All location state
 
 typedef enum
 {
-    AP_DISABLED,
+    AP_UNINIT,
     AP_INITIALIZED,
     AP_CONNECTED,
     AP_CONNECTION_LOST,
-} ap_state_t;
+} ap_init_state_t;
 
-extern ap_state_t ap_global_state;
+extern ap_init_state_t ap_global_state;
 
-#define AP (ap_global_state > AP_DISABLED)
+#define AP (ap_global_state > AP_UNINIT)
 #define APConnected (ap_global_state == AP_CONNECTED)
 
 extern Json::Value ap_game_config;  // Only valid if ap_global_state != AP_DISABLED
 
-extern void AP_Init(Json::Value game_config);
+typedef enum
+{
+    AP_DISABLED,
+    AP_SERVER,
+    AP_LOCAL,
+} ap_gamemode_t;
+
+typedef struct {
+    ap_gamemode_t mode;
+    const char* ip;
+    const char* game;
+    const char* player;
+    const char* password;
+    const char* sp_world;
+} ap_connection_settings_t;
+
+extern void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection);
+extern void AP_LibShutdown(void);
+
+/* Player state */
+
+typedef struct {
+    std::map<ap_net_id_t, uint16_t> persistent;
+} ap_state_t;
+
+extern ap_state_t ap_game_state;
+
+extern std::map<ap_net_id_t, Json::Value> ap_item_info;  // All item descriptions for a game data
+extern std::vector<ap_net_id_t> ap_item_queue;  // Queue of items to be provided to the player when he's in-game
+
+extern bool AP_HasItem(ap_net_id_t id);
+extern uint16_t AP_ItemCount(ap_net_id_t id);
+
 extern int32_t AP_CheckLocation(ap_location_t loc);
 
 #ifdef __cplusplus

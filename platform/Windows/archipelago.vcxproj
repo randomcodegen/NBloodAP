@@ -29,12 +29,17 @@
   <ItemGroup>
     <ClInclude Include="..\..\source\archipelago\ap_comp.h" />
     <ClInclude Include="..\..\source\archipelago\ap_lib.h" />
+    <ClInclude Include="..\..\source\archipelago\ap_log.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\archipelago\ap_comp.cpp" />
     <ClCompile Include="..\..\source\archipelago\ap_lib.cpp" />
+    <ClCompile Include="..\..\source\archipelago\ap_log.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="build.vcxproj">
+      <Project>{dbecb851-5624-4fa8-9a9d-7169d0f12ff1}</Project>
+    </ProjectReference>
     <ProjectReference Include="mimalloc.vcxproj">
       <Project>{1150264b-19c6-4c32-a204-cb79e96d5492}</Project>
     </ProjectReference>

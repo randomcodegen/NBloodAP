@@ -33,7 +33,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ap_integration.h"
 
 static void ap_init_menu(void);
-static void ap_menu_prepare_level_list(uint8_t ep_menu_cnt);
+static void ap_menu_prepare_level_list(void);
+static void ap_menu_set_level_enabled(void);
 
 #include "in_android.h"
 #ifndef __ANDROID__
@@ -441,7 +442,7 @@ static MenuEntry_t ME_Space8_Redfont = MAKE_MENUENTRY( NULL, &MF_Redfont, &MEF_N
 static MenuLink_t MEO_ ## EntryName = { LinkID, MA_Advance, };\
 static MenuEntry_t ME_ ## EntryName = MAKE_MENUENTRY( Title, &MF_Redfont, &Format, &MEO_ ## EntryName, Link )
 
-static char const s_AP_SelectEpisode[] = "Select Episode";
+static char const s_AP_SelectEpisode[] = "Select Level";
 static char const s_NewGame[] = "New Game";
 static char const s_SaveGame[] = "Save Game";
 static char const s_LoadGame[] = "Load Game";
@@ -4186,7 +4187,7 @@ static void Menu_EntryLinkActivate(MenuEntry_t *entry)
             else if(AP)
             {
                 ap_select_episode(M_EPISODE.currentEntry);
-                ap_menu_prepare_level_list(M_EPISODE.currentEntry);
+                ap_menu_prepare_level_list();
             }
             else
             {
@@ -8150,6 +8151,10 @@ static void Menu_RunInput(Menu_t *cm)
 
             state = Menu_DetermineSpecialState(currentry);
 
+            // [AP] Update Level Select status for unlocks we receive while on a menu. Not sure if there's a better place to put this logic
+            if (m_currentMenu->menuID == MENU_AP_LEVEL)
+                ap_menu_set_level_enabled();
+
             if (state == 0)
             {
                 if (currentry != NULL)
@@ -8619,14 +8624,14 @@ void ap_init_menu(void)
             Menus[i].parentID = MENU_AP_LEVEL;
     }
     // Update episode list to known episodes
-    for (int i = 0; i < ap_active_episode_count; i++) {
-        ME_EPISODE[i].name = ap_active_episodes[i].c_str();
+    for (uint8_t i : ap_active_episodes) {
+        ME_EPISODE[i].name = ap_episode_names[i].c_str();
     }
     // This might leak some memory, but it happens once so I don't care
-    for (int i = ap_active_episode_count; i < MAXVOLUMES; i++) {
+    for (size_t i = ap_active_episodes.size(); i < MAXVOLUMES; i++) {
         Bmemset(&ME_EPISODE[i], 0 , sizeof(MenuEntry_t));
     }
-    M_EPISODE.numEntries = ap_active_episode_count;
+    M_EPISODE.numEntries = ap_active_episodes.size();
     MEO_EPISODE.linkID = MENU_AP_LEVEL;
     // Update display text
     ME_MAIN_NEWGAME.name = s_AP_SelectEpisode;
@@ -8634,20 +8639,46 @@ void ap_init_menu(void)
     MEO_MAIN_NEWGAME_INGAME.linkID = MENU_EPISODE;
 }
 
-void ap_menu_prepare_level_list(uint8_t ep_menu_cnt)
+void ap_menu_prepare_level_list()
 {
     // Get active level count for episode
-    M_LEVEL.numEntries = ap_active_levels_count[ep_menu_cnt];
-    for (int i = 0; i < numMenus; i++)
-        if (Menus[i].menuID == MENU_SKILL)
-            Menus[i].parentID = MENU_AP_LEVEL;
+    M_LEVEL.numEntries = ap_active_levels[ud.m_volume_number].size();
     // Update level list for selected episode
     for (int i = 0; i < M_LEVEL.numEntries; i++)
     {
         MEL_LEVEL[i] = &ME_LEVEL[i];
         ME_LEVEL[i] = ME_LEVEL_TEMPLATE;
-        ME_LEVEL[i].name = ap_active_levels[ep_menu_cnt][i].c_str();
+        std::string level_str = ap_format_map_id(ap_active_levels[ud.m_volume_number][i], ud.m_volume_number);
+        Json::Value level_data = ap_level_data[level_str];
+
+        if (ME_LEVEL[i].name != NULL)
+            Xfree((void *) ME_LEVEL[i].name);
+        std::string level_name = level_data["name"].asString();
+        char* buf = (char *)Xmalloc(level_name.size() + 1);
+        Bstrncpy(buf, level_name.c_str(), level_name.size() + 1);
+        ME_LEVEL[i].name = buf;
+
     }
     for (int i = M_LEVEL.numEntries; i < MAXLEVELS; i++)
         Bmemset(&ME_LEVEL[i], 0, sizeof(MenuEntry_t));
+
+    ap_menu_set_level_enabled();
+}
+
+void ap_menu_set_level_enabled(void)
+{
+    // Get active level count for episode
+    M_LEVEL.numEntries = ap_active_levels[ud.m_volume_number].size();
+    // Update level enabled flag
+    for (int i = 0; i < M_LEVEL.numEntries; i++)
+    {
+        std::string level_str = ap_format_map_id(ap_active_levels[ud.m_volume_number][i], ud.m_volume_number);
+        Json::Value level_data = ap_level_data[level_str];
+
+        // Disable the entry if it has not been unlocked yet
+        if (!(AP_HasItem(AP_NET_ID(level_data["unlock"].asInt()))))
+            ME_LEVEL[i].flags |= MEF_Disabled;
+        else
+            ME_LEVEL[i].flags &= ~MEF_Disabled;
+    }
 }

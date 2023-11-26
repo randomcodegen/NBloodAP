@@ -2595,6 +2595,9 @@ int G_EnterLevel(int gameMode)
     G_AlignWarpElevators();
     resetpspritevars(gameMode);
 
+    // [AP] Player variables were reset, sync in our AP inventory state now
+    ap_sync_inventory();
+
     ud.playerbest = CONFIG_GetMapBestTime(Menu_HaveUserMap() ? boardfilename : g_mapInfo[mii].filename, g_loadedMapHack.md4);
 
     // G_FadeLoad(0,0,0, 252,0, -28, 4, -1);
