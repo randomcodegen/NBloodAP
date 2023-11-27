@@ -18,6 +18,12 @@ extern void ap_select_episode(uint8_t i);
 extern void ap_select_level(uint8_t i);
 extern std::string ap_format_map_id(uint8_t level_number, uint8_t volume_number);
 
+// Conditional abilities
+extern bool ap_can_dive();
+extern bool ap_can_jump();
+extern bool ap_can_run();
+extern bool ap_can_crouch();
+
 extern std::string ap_episode_names[MAXVOLUMES];
 extern std::vector<uint8_t> ap_active_episodes;
 extern std::vector<std::vector<uint8_t>> ap_active_levels;

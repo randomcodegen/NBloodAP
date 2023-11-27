@@ -107,6 +107,8 @@ extern ap_state_t ap_game_state;
 
 extern std::map<ap_net_id_t, Json::Value> ap_item_info;  // All item descriptions for a game data
 
+extern std::map<std::string, Json::Value> ap_game_settings;  // All dynamic seed specific settings
+
 extern bool AP_HasItem(ap_net_id_t id);
 extern uint16_t AP_ItemCount(ap_net_id_t id);
 extern uint16_t AP_ProgressiveItem(ap_net_id_t id);

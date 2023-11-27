@@ -3487,7 +3487,8 @@ void P_GetInput(int playerNum)
     }
 
     // JBF: Run key behaviour is selectable
-    int const playerRunning = (ud.runkey_mode) ? (BUTTON(gamefunc_Run) | ud.auto_run) : (ud.auto_run ^ BUTTON(gamefunc_Run));
+    // [AP] Limit running ability
+    int const playerRunning = ((ud.runkey_mode) ? (BUTTON(gamefunc_Run) | ud.auto_run) : (ud.auto_run ^ BUTTON(gamefunc_Run))) && (!AP || ap_can_run());
     int const turnAmount = playerRunning ? (NORMALTURN << 1) : NORMALTURN;
     constexpr int const analogTurnAmount = (NORMALTURN << 1);
     int const keyMove    = playerRunning ? (NORMALKEYMOVE << 1) : NORMALKEYMOVE;
@@ -8664,7 +8665,8 @@ check_enemy_sprite:
 
             pPlayer->on_warping_sector = 0;
 
-            if (TEST_SYNC_KEY(playerBits, SK_CROUCH) && (!RRRA || !pPlayer->on_motorcycle))
+            // [AP] Limit crouching ability
+            if (TEST_SYNC_KEY(playerBits, SK_CROUCH) && (!RRRA || !pPlayer->on_motorcycle) && (!AP || ap_can_crouch()))
             {
                 // crouching
                 if (VM_OnEvent(EVENT_CROUCH,pPlayer->i,playerNum) == 0)
@@ -8679,7 +8681,8 @@ check_enemy_sprite:
                 pPlayer->jumping_toggle = 0;
             else if (TEST_SYNC_KEY(playerBits, SK_JUMP) && (!RRRA || !pPlayer->on_motorcycle) && pPlayer->jumping_toggle == 0)
             {
-                if (pPlayer->jumping_counter == 0)
+                // [AP] Limit jumping ability
+                if (pPlayer->jumping_counter == 0 && (!AP || ap_can_jump()))
                     if ((floorZ-ceilZ) > (56<<8))
                     {
                         if (VM_OnEvent(EVENT_JUMP,pPlayer->i,playerNum) == 0)
@@ -8870,7 +8873,8 @@ check_enemy_sprite:
 
         int playerSpeedReduction = 0;
         
-        if (!RRRA && pPlayer->on_ground && (TEST_SYNC_KEY(playerBits, SK_CROUCH)
+        // [AP] Respect limited crouching ability for slowdown
+        if (!RRRA && pPlayer->on_ground && (TEST_SYNC_KEY(playerBits, SK_CROUCH) && (!AP || ap_can_crouch())
                   || (*weaponFrame > 10 && pPlayer->curr_weapon == KNEE_WEAPON)))
             playerSpeedReduction = 0x2000;
         else if (sectorLotag == ST_2_UNDERWATER)
@@ -9785,7 +9789,8 @@ void P_DHProcessInput(int playerNum)
 
             pPlayer->on_warping_sector = 0;
 
-            if (TEST_SYNC_KEY(playerBits, SK_CROUCH) && !pPlayer->on_motorcycle)
+            // [AP] Limit crouching ability
+            if (TEST_SYNC_KEY(playerBits, SK_CROUCH) && !pPlayer->on_motorcycle && (!AP || ap_can_crouch()))
             {
                 // crouching
                 pPlayer->pos.z += (2048+768);
@@ -9797,7 +9802,8 @@ void P_DHProcessInput(int playerNum)
                 pPlayer->jumping_toggle = 0;
             else if (TEST_SYNC_KEY(playerBits, SK_JUMP) && !pPlayer->on_motorcycle && pPlayer->jumping_toggle == 0)
             {
-                if (pPlayer->jumping_counter == 0)
+                // [AP] Limit jumping ability
+                if (pPlayer->jumping_counter == 0 && (!AP || ap_can_jump()))
                     if ((floorZ-ceilZ) > (56<<8))
                     {
                         pPlayer->jumping_counter = 1;
@@ -9957,7 +9963,7 @@ HORIZONLY:;
         {
             pPlayer->pycount += 64;
             pPlayer->pycount &= 2047;
-            if (TEST_SYNC_KEY(playerBits, SK_CROUCH))
+            if (TEST_SYNC_KEY(playerBits, SK_CROUCH) && (!AP || ap_can_crouch()))
             {
                 pPlayer->pyoff = klabs(sintable[pPlayer->pycount]) >> 6;
                 ghsound_footstepsound(playerNum, 2);

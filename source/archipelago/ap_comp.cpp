@@ -93,6 +93,12 @@ void AP_Init_Compat(const char* filename)
             }
         }
     }
+
+    // Load settings
+    for (std::string setting_name : world_info["settings"].getMemberNames())
+    {
+        ap_game_settings[setting_name] = world_info["settings"][setting_name];
+    }
 }
 
 void AP_Start_Compat()

@@ -3272,6 +3272,8 @@ default_case:
 
 static int P_Submerge(int const spriteNum, int const playerNum, DukePlayer_t * const pPlayer, int const sectNum, int const otherSect)
 {
+    // [AP] Conditional diving only!
+    if (AP && !ap_can_dive()) return 0;
     if ((!RR && pPlayer->on_ground && pPlayer->pos.z > sector[sectNum].floorz - ZOFFSET2
         && (TEST_SYNC_KEY(g_player[playerNum].inputBits->bits, SK_CROUCH) || pPlayer->vel.z > 2048))
         || (RR && pPlayer->pos.z > (sector[sectNum].floorz-(6<<8))) || pPlayer->on_motorcycle)

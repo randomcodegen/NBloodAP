@@ -17,6 +17,8 @@ ap_state_t ap_game_state = {
 };
 std::map<ap_net_id_t, Json::Value> ap_item_info;
 
+std::map<std::string, Json::Value> ap_game_settings;
+
 
 static void init_location_table(Json::Value& locations)
 {

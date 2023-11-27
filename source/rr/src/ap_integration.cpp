@@ -474,6 +474,7 @@ static inline int64_t json_get_int(Json::Value& val, int64_t def)
 // Track inventory unlock state. There might be a better solution to this?
 static uint8_t inv_available[GET_MAX];
 static uint16_t inv_capacity[GET_MAX];
+static std::map<std::string, uint8_t> ability_unlocks;
 
 void force_set_player_weapon(uint8_t weaponnum)
 {
@@ -644,6 +645,11 @@ static void ap_get_item(ap_net_id_t item_id, bool silent)
                 ACTIVE_PLAYER->inven_icon = inv_to_icon[invnum];
         }
     }
+    else if (item_type == "ability")
+    {
+        if (item_info["enables"].isString())
+            ability_unlocks[item_info["enables"].asString()] = 1;
+    }
 }
 
 void ap_process_event_queue(void)
@@ -689,6 +695,16 @@ static void ap_set_default_inv(void)
     ACTIVE_PLAYER->max_ammo_amount[TRIPBOMB_WEAPON__STATIC] = 3;
     ACTIVE_PLAYER->max_ammo_amount[FREEZE_WEAPON__STATIC] = 50;
     ACTIVE_PLAYER->max_ammo_amount[GROW_WEAPON__STATIC] = 5;
+
+    ability_unlocks.clear();
+    if (!ap_game_settings["lock_crouch"].asBool())
+        ability_unlocks["crouch"] = true;
+    if (!ap_game_settings["lock_dive"].asBool())
+        ability_unlocks["dive"] = true;
+    if (!ap_game_settings["lock_jump"].asBool())
+        ability_unlocks["jump"] = true;
+    if (!ap_game_settings["lock_run"].asBool())
+        ability_unlocks["run"] = true;
 }
 
 void ap_load_dynamic_player_data()
@@ -833,4 +849,24 @@ void ap_shutdown(void)
     AP_LibShutdown();
     // Fix our dynamically managed quote. The underlying c_str is managed by the string variable
     apStrings[AP_RECEIVE_ITEM_QUOTE] = NULL;
+}
+
+bool ap_can_dive()
+{
+    return (ACTIVE_PLAYER->inv_amount[GET_SCUBA] > 0) || ability_unlocks.count("dive");
+}
+
+bool ap_can_jump()
+{
+    return ability_unlocks.count("jump");
+}
+
+bool ap_can_crouch()
+{
+    return ability_unlocks.count("crouch");
+}
+
+bool ap_can_run()
+{
+    return ability_unlocks.count("run");
 }
