@@ -167,6 +167,8 @@ static int osdcmd_changelevel(osdcmdptr_t parm)
 
         ud.multimode           = 1;
 
+        // Store player state if changing from midlevel
+        ap_store_dynamic_player_data();
         G_NewGame_EnterLevel();
     }
 

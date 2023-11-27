@@ -4185,10 +4185,7 @@ static void Menu_EntryLinkActivate(MenuEntry_t *entry)
                 }
             }
             else if(AP)
-            {
                 ap_select_episode(M_EPISODE.currentEntry);
-                ap_menu_prepare_level_list();
-            }
             else
             {
                 ud.m_volume_number = M_EPISODE.currentEntry;
@@ -4204,6 +4201,8 @@ static void Menu_EntryLinkActivate(MenuEntry_t *entry)
         ap_select_level(M_LEVEL.currentEntry);
         ud.m_player_skill = 0; // ToDo select skill from ap seed
         ud.multimode = 1;
+        // [AP] If we switch level from in-game, keep player state
+        ap_store_dynamic_player_data();
         G_NewGame_EnterLevel();
         break;
 
@@ -4828,6 +4827,8 @@ static void Menu_Verify(int32_t input)
             KB_FlushKeyboardQueue();
             KB_ClearKeysDown();
             FX_StopAllSounds();
+            // [AP] If we loads save from in-game, keep player state
+            ap_store_dynamic_player_data();
 
             if (G_LoadPlayerMaybeMulti(*g_quickload) == 0)
                 break;
@@ -4837,6 +4838,8 @@ static void Menu_Verify(int32_t input)
 
             fallthrough__;
         case 0:
+            // [AP] If we restart level from in-game, keep player state
+            ap_store_dynamic_player_data();
             if (sprite[g_player[myconnectindex].ps->i].extra <= 0)
             {
                 if (G_EnterLevel(MODE_GAME)) G_BackToMenu();
@@ -4852,6 +4855,9 @@ static void Menu_Verify(int32_t input)
         if (input)
         {
             savebrief_t & sv = g_menusaves[M_LOAD.currentEntry].brief;
+
+            // [AP] If we load save from in-game, keep player state
+            ap_store_dynamic_player_data();
 
             if (strcmp(sv.path, g_lastusersave.path) != 0)
             {
@@ -4920,7 +4926,11 @@ static void Menu_Verify(int32_t input)
     case MENU_QUIT:
     case MENU_QUIT_INGAME:
         if (input)
+        {
+            // [AP] If we quit game from in-game, keep player state
+            ap_store_dynamic_player_data();
             G_GameQuit();
+        }
         else
             g_quitDeadline = 0;
         break;
@@ -5472,6 +5482,10 @@ static void Menu_AboutToStartDisplaying(Menu_t * m)
         }
         else if (m_previousMenu->menuID == MENU_SOUND)
             Menu_RefreshSoundProperties();
+        break;
+
+    case MENU_AP_LEVEL:
+        ap_menu_prepare_level_list();
         break;
 
     default:

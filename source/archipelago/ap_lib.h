@@ -97,14 +97,15 @@ extern void AP_LibShutdown(void);
 /* Player state */
 
 typedef struct {
-    std::map<ap_net_id_t, uint16_t> persistent;
-    std::map<ap_net_id_t, uint16_t> progressive;
+    std::map<ap_net_id_t, uint16_t> persistent;  // Counts of all items received. Do not modify, this is the progression state!
+    std::map<ap_net_id_t, uint16_t> progressive;  // Counts for each progressive item applied. Can be safely cleared when reapplying all items to keep track again
+    std::vector<ap_net_id_t> ap_item_queue;  // Queue of items to be provided to the player whenever he's in-game
+    Json::Value dynamic_player;  // Game specific dynamic state. This should be conserved, but contains no progression relevant information
 } ap_state_t;
 
 extern ap_state_t ap_game_state;
 
 extern std::map<ap_net_id_t, Json::Value> ap_item_info;  // All item descriptions for a game data
-extern std::vector<ap_net_id_t> ap_item_queue;  // Queue of items to be provided to the player when he's in-game
 
 extern bool AP_HasItem(ap_net_id_t id);
 extern uint16_t AP_ItemCount(ap_net_id_t id);

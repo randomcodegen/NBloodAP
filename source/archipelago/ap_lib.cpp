@@ -9,9 +9,14 @@ uint8_t ap_game_id = 0;
 Json::Value ap_game_config;
 
 ap_location_state_t ap_locations[AP_MAX_LOCATION];
-ap_state_t ap_game_state = { std::map<ap_net_id_t, uint16_t>(), std::map<ap_net_id_t, uint16_t>() };
+ap_state_t ap_game_state = { 
+    std::map<ap_net_id_t, uint16_t>(), 
+    std::map<ap_net_id_t, uint16_t>(),
+    std::vector<ap_net_id_t>(),
+    Json::Value()
+};
 std::map<ap_net_id_t, Json::Value> ap_item_info;
-std::vector<ap_net_id_t> ap_item_queue;
+
 
 static void init_location_table(Json::Value& locations)
 {
@@ -132,7 +137,7 @@ void AP_ItemReceived(int64_t item_id, int slot, bool notify)
 
     // If we should tell the player about the item, put it into the item queue
     if (notify)
-        ap_item_queue.push_back(item_id);
+        ap_game_state.ap_item_queue.push_back(item_id);
 }
 
 void AP_ExtLocationCheck(int64_t location_id)

@@ -4,7 +4,9 @@
 #include "duke3d.h"
 
 extern void ap_on_map_load(void);
-extern void ap_sync_inventory(void);
+extern void ap_on_save_load(void);
+extern void ap_sync_inventory();
+extern void ap_store_dynamic_player_data(void);
 extern void ap_startup(void);
 extern void ap_shutdown(void);
 extern void ap_initialize(void);

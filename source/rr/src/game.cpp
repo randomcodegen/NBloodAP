@@ -3995,6 +3995,9 @@ rr_badguy:
             // Having a lotag of -1 here means the item has been marked for deletion
             // Otherwise properly size it and set it up as an actor
             pSprite->xrepeat = pSprite->yrepeat = pSprite->lotag < 0 ? 0 : 48;
+            // Also clear all palette and extra information
+            pSprite->pal = 0;
+            pSprite->extra = 0;
             changespritestat(newSprite, pSprite->lotag < 0 ? STAT_MISC : STAT_ACTOR);
             break;
         case AP_PROCESSOR__STATIC:

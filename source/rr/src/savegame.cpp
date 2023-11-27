@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "premap.h"
 #include "prlights.h"
 #include "savegame.h"
+#include "ap_integration.h"
 
 static OutputFileCounter savecounter;
 
@@ -2171,6 +2172,9 @@ static void postloadplayer(int32_t savegamep)
 
     if (REALITY)
         RT_ResetBarScroll();
+
+    // [AP] Loaded player, restore AP inventory status
+    ap_on_save_load();
 }
 
 ////////// END GENERIC SAVING/LOADING SYSTEM //////////
