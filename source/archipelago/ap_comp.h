@@ -12,7 +12,7 @@
   locally generated worlds for testing properly.
 */
 
-#define AP_USE_COMP_LAYER
+// #define AP_USE_COMP_LAYER
 
 #ifdef AP_USE_COMP_LAYER
 
@@ -39,7 +39,7 @@ void AP_RegisterSlotDataRawCallback_Compat(std::string, void (*f_slotdata)(std::
 #define AP_SendItem_Compat AP_SendItem
 #define AP_Init_Compat AP_Init
 #define AP_Start_Compat AP_Start
-#define AP_Shutdown_Compat AP_Compat
+#define AP_Shutdown_Compat AP_Shutdown
 #define AP_SetItemClearCallback_Compat AP_SetItemClearCallback
 #define AP_SetItemRecvCallback_Compat AP_SetItemRecvCallback
 #define AP_SetLocationCheckedCallback_Compat AP_SetLocationCheckedCallback

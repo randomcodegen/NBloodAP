@@ -22,6 +22,9 @@ std::map<std::string, Json::Value> ap_game_settings;
 std::map<ap_net_id_t, uint16_t> ap_goals;
 std::map<ap_net_id_t, uint8_t> ap_used_level_unlocks;
 
+Json::Reader ap_reader;
+Json::FastWriter ap_writer;
+
 
 static void init_location_table(Json::Value& locations)
 {
@@ -81,9 +84,8 @@ static void init_item_table(Json::Value& items)
 
 static void set_goals(std::string json)
 {
-    Json::Reader reader;
     Json::Value goals;
-    reader.parse(json, goals);
+    ap_reader.parse(json, goals);
 
     ap_goals.clear();
     for (std::string goal_str : goals.getMemberNames())
@@ -95,9 +97,8 @@ static void set_goals(std::string json)
 
 static void set_available_locations(std::string json)
 {
-    Json::Reader reader;
     Json::Value locations;
-    reader.parse(json, locations);
+    ap_reader.parse(json, locations);
 
     std::vector<int64_t> scout_reqs;
 
@@ -117,9 +118,8 @@ static void set_available_locations(std::string json)
 
 static void set_used_levels(std::string json)
 {
-    Json::Reader reader;
     Json::Value levels;
-    reader.parse(json, levels);
+    ap_reader.parse(json, levels);
 
     ap_used_level_unlocks.clear();
     for (unsigned int i=0; i < levels.size(); i++)
@@ -130,9 +130,8 @@ static void set_used_levels(std::string json)
 
 static void set_settings(std::string json)
 {
-    Json::Reader reader;
     Json::Value settings;
-    reader.parse(json, settings);
+    ap_reader.parse(json, settings);
 
     ap_game_settings.clear();
     for (std::string setting_name : settings.getMemberNames())
@@ -143,31 +142,6 @@ static void set_settings(std::string json)
 
 static void initialize_save_data(Json::Value& init_data)
 {
-    for (std::string item_str : init_data["items"].getMemberNames())
-    {
-        ap_net_id_t item_id = std::stoll(item_str);
-        Json::Value item_info = ap_item_info[item_id];
-
-        // Store counts for stateful items
-        if (item_info["persistent"].asBool())
-        {
-            uint16_t count = 0;
-            if (AP_HasItem(item_id))
-            {
-                count = ap_game_state.persistent[item_id];
-            }
-            // Increment
-            count += init_data["items"][item_str].asInt();
-            // Set to 1 if it's a unique item
-            if (item_info["unique"].asBool())
-                count = 1;
-            ap_game_state.persistent[item_id] = count;
-        }
-    }
-    for (unsigned int i=0; i < init_data["queue"].size(); i++)
-    {
-        ap_game_state.ap_item_queue.push_back(init_data["queue"][i].asInt64());
-    }
     ap_game_state.dynamic_player.copy(init_data["player"]);
 }
 
@@ -261,11 +235,13 @@ void AP_LocationInfo(std::vector<AP_NetworkItem> scouted_items)
 bool sync_wait_for_data(uint32_t timeout)
 {
     Json::Value save_data;
+    std::string serialized_save_data;
+
     AP_GetServerDataRequest save_req = {
         AP_RequestStatus::Pending,
         AP_GetPrivateServerDataPrefix_Compat() + "_save_data",
-        (void *)&save_data,
-        AP_DataType::Json
+        (void *)&serialized_save_data,
+        AP_DataType::Raw
     };
 
     // Request save data from server
@@ -282,6 +258,8 @@ bool sync_wait_for_data(uint32_t timeout)
             return TRUE;
         }
     }
+
+    ap_reader.parse(serialized_save_data, save_data);
 
     initialize_save_data(save_data);
 
@@ -317,7 +295,8 @@ void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection)
     init_item_table(game_config["items"]);
     ap_game_config = game_config;
 
-    AP_Init_Compat(connection.sp_world);
+    //AP_Init_Compat(connection.sp_world);
+    AP_Init_Compat(connection.ip, connection.game, connection.player, connection.password);
     AP_SetItemClearCallback_Compat(&AP_ClearAllItems);
     AP_SetItemRecvCallback_Compat(&AP_ItemReceived);
     AP_SetLocationCheckedCallback_Compat(&AP_ExtLocationCheck);
@@ -353,21 +332,17 @@ void AP_SyncProgress(void)
 
     Json::Value save_data;
 
-    for(auto pair : ap_game_state.persistent)
-    {
-        save_data["items"][std::to_string(pair.first)] = pair.second;
-    }
-    for (unsigned int i=0; i < ap_game_state.ap_item_queue.size(); i++)
-    {
-        save_data["queue"][i] = ap_game_state.ap_item_queue[i];
-    }
     save_data["player"] = ap_game_state.dynamic_player;
+
+    std::string serialized = ap_writer.write(save_data);
 
     AP_SetServerDataRequest req;
     req.key = AP_GetPrivateServerDataPrefix_Compat() + "_save_data";
-    AP_DataStorageOperation op = { "replace", &save_data };
+    AP_DataStorageOperation op = { "replace", &serialized };
     req.operations.push_back(op);
-    req.type = AP_DataType::Json;
+    req.type = AP_DataType::Raw;
+    std::string default_value = "";
+    req.default_value = &default_value;
 
     AP_SetServerData_Compat(&req);
 
@@ -379,15 +354,21 @@ static bool reached_goal = false;
 bool AP_CheckVictory(void)
 {
     if (reached_goal) return false; // Already reached victory state once
+    bool all_reached = true;
     for (auto pair: ap_goals)
     {
-        if (AP_ItemCount(pair.first) < pair.second) break;  // Check goal count
-        reached_goal = true;
+        // Check goal count
+        if (AP_ItemCount(pair.first) < pair.second)
+        {
+            all_reached = false;
+            break;
+        }
     }
 
-    if (reached_goal)
+    if (all_reached)
     {
         // Send victory state to AP Server
+        reached_goal = true;
         AP_StoryComplete_Compat();
     }
 

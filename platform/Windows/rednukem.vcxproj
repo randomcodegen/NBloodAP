@@ -135,10 +135,10 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>APCpp_debug.lib;jsoncpp_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>APCpp_debug.lib;jsoncpp_debug.lib;ixwebsocket.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>XCOPY "$(SolutionDir)"\lib\APCpp\*.DLL "$(TargetDir)" /D /K /Y</Command>
+      <Command>XCOPY "$(SolutionDir)"\lib\APCpp\APCpp_debug.DLL "$(TargetDir)\APCpp.dll" /D /K /Y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

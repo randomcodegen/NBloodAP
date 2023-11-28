@@ -445,7 +445,7 @@ void ap_initialize(void)
     Json::Value game_ap_config = read_json_from_grp("ap_config.json");
 
     // ToDo get from settings window/cli
-    ap_connection_settings_t connection = {AP_LOCAL, "", "", "", "", "local_world.json"};
+    ap_connection_settings_t connection = {AP_LOCAL, "localhost:38281", "Duke3D", "Tarrik", "", "local_world.json"};
 
     AP_Initialize(game_ap_config, connection);
 

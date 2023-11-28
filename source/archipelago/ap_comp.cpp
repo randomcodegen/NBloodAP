@@ -1,6 +1,7 @@
 #include "ap_comp.h"
 #include <json/json.h>
 #include "ap_lib.h"
+#include <fstream>
 
 #ifdef AP_USE_COMP_LAYER
 
@@ -35,14 +36,14 @@ void AP_Init_Compat(const char* ip, const char* game, const char* player_name, c
   // Not supported, just for linking
 }
 
-// Not exposed with a header we could include from this layer, need this for the compatibility implementation to
-// get the game data somehow
-extern Json::Value read_json_from_grp(const char* filename);
 Json::Value world_info;
 
 void AP_Init_Compat(const char* filename)
 {
-	world_info = read_json_from_grp(filename);
+    Json::Reader reader;
+    std::ifstream mwfile(filename);
+    reader.parse(mwfile, world_info);
+    mwfile.close();
 }
 
 
@@ -183,9 +184,6 @@ void AP_GetServerData_Compat(AP_GetServerDataRequest* request)
         break;
     case AP_DataType::Double:
         *((double*)request->value) = 0;
-        break;
-    case AP_DataType::Json:
-        *((Json::Value*)request->value) = Json::Value();
         break;
     case AP_DataType::Raw:
         *((std::string*)request->value) = "";
