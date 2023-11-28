@@ -1568,8 +1568,7 @@ void G_DisplayLogo(void)
     S_ClearSoundLocks();  // JBF 20031228
 
     // [AP] Skip logos and opening scenes when returning to menu from in-game
-    if (ap_return_to_menu)
-        g_noLogo = 1;
+    g_noLogo = ap_return_to_menu;
     if (DEER)
     {
         if (!g_noLogo /* && (!g_netServer && ud.multimode < 2) */)
@@ -2242,7 +2241,7 @@ static void G_BonusCutscenes(void)
         S_StopMusic();
         videoClearScreen(0L);
         videoNextPage();
-        if (ud.lockout == 0)
+        if (!AP && ud.lockout == 0)
         {
             fadepal(0, 0, 0, 252, 0, -4);
             Anim_Play("cineov3.anm");
@@ -2535,7 +2534,7 @@ void G_BonusScreen(int32_t bonusonly)
         fadepal(0, 0, 0, 0, 252, RR ? 4 : 28);
     }
 
-    if (bonusonly || (g_netServer || ud.multimode > 1)) return;
+    if (AP || bonusonly || (g_netServer || ud.multimode > 1)) return;
 
     if (!RR)
     {

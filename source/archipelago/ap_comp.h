@@ -27,8 +27,12 @@ void AP_SetLocationCheckedCallback_Compat(void (*f_locrecv)(int64_t));
 void AP_SendLocationScouts_Compat(std::vector<int64_t> const& locations, int create_as_hint);
 void AP_SetLocationInfoCallback_Compat(void (*f_locrecv)(std::vector<AP_NetworkItem>));
 AP_DataPackageSyncStatus AP_GetDataPackageStatus_Compat();
-std::vector<int64_t> AP_GetGameLocations_Compat();
 std::string AP_GetLocationName_Compat(int64_t);
+void AP_SetServerData_Compat(AP_SetServerDataRequest* request);
+void AP_GetServerData_Compat(AP_GetServerDataRequest* request);
+std::string AP_GetPrivateServerDataPrefix_Compat();
+void AP_StoryComplete_Compat(void);
+void AP_RegisterSlotDataRawCallback_Compat(std::string, void (*f_slotdata)(std::string));
 
 #else
 
@@ -42,7 +46,11 @@ std::string AP_GetLocationName_Compat(int64_t);
 #define AP_SendLocationScouts_Compat AP_SendLocationScouts
 #define AP_SetLocationInfoCallback_Compat AP_SetLocationInfoCallback
 #define AP_GetDataPackageStatus_Compat AP_GetDataPackageStatus
-#define AP_GetGameLocations_Compat AP_GetGameLocations
 #define AP_GetLocationName_Compat AP_GetLocationName
+#define AP_SetServerData_Compat AP_SetServerData
+#define AP_GetServerData_Compat AP_GetServerData
+#define AP_GetPrivateServerDataPrefix_Compat AP_GetPrivateServerDataPrefix
+#define AP_StoryComplete_Compat AP_StoryComplete
+#define AP_RegisterSlotDataRawCallback_Compat AP_RegisterSlotDataRawCallback
 
 #endif

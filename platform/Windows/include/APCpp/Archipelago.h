@@ -87,7 +87,6 @@ void AP_DeathLinkSend();
 
 std::string AP_GetLocationName(int64_t);
 std::string AP_GetItemName(int64_t);
-std::vector<int64_t> AP_GetGameLocations();
 
 /* Message Management Types */
 
@@ -171,7 +170,7 @@ enum struct AP_RequestStatus {
 };
 
 enum struct AP_DataType {
-    Raw, Int, Double
+    Raw, Int, Double, Json
 };
 
 struct AP_GetServerDataRequest {

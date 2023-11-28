@@ -8690,7 +8690,7 @@ void ap_menu_set_level_enabled(void)
         Json::Value level_data = ap_level_data[level_str];
 
         // Disable the entry if it has not been unlocked yet
-        if (!(AP_HasItem(AP_NET_ID(level_data["unlock"].asInt()))))
+        if (!(AP_HasItem(AP_NET_ID(level_data["unlock"].asInt64()))))
             ME_LEVEL[i].flags |= MEF_Disabled;
         else
             ME_LEVEL[i].flags &= ~MEF_Disabled;

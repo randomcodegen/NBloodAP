@@ -12,6 +12,8 @@
 #include <json/reader.h>
 // For Menu manipulation
 #include "menus.h"
+// For victory check
+#include "screens.h"
 
 uint8_t ap_return_to_menu = 0;
 
@@ -353,9 +355,7 @@ void ap_startup(void)
     // ToDo find a better way to do this with dependency chaining?
     // Eventually this might become entirely unnecessary if we get the grp
     // handling right
-    const char apgrp[19] = "ap/ARCHIPELAGO.zip";
-    G_AddGroup(apgrp);
-    const char customgrp[16] = "ap/DUKE3DAP.zip";
+    const char customgrp[13] = "DUKE3DAP.zip";
     G_AddGroup(customgrp);
     const char customcon[13] = "DUKE3DAP.CON";
     g_scriptNamePtr          = Xstrdup(customcon);
@@ -414,7 +414,8 @@ void ap_parse_levels()
         for (std::string lev_id : ap_game_config["episodes"][ep_id]["levels"].getMemberNames())
         {
             uint8_t levelnum = ap_game_config["episodes"][ep_id]["levels"][lev_id]["levelnum"].asInt();
-            if (AP_VALID_LOCATION(safe_location_id(ap_game_config["episodes"][ep_id]["levels"][lev_id]["exit"])))
+            ap_net_id_t unlock = ap_game_config["episodes"][ep_id]["levels"][lev_id]["unlock"].asInt64();
+            if (AP_IsLevelUsed(unlock))
             {
                 ap_level_data[ap_format_map_id(levelnum, volume)] = ap_game_config["episodes"][ep_id]["levels"][lev_id];
             }
@@ -652,7 +653,8 @@ static void ap_get_item(ap_net_id_t item_id, bool silent)
     }
 }
 
-void ap_process_event_queue(void)
+// Called from an actor in game, ensures we are in a valid game state and an in game tic has expired since last call
+void ap_process_game_tic(void)
 {
     // Check for items in our queue to process
     while (!ap_game_state.ap_item_queue.empty())
@@ -661,6 +663,30 @@ void ap_process_event_queue(void)
         ap_game_state.ap_item_queue.erase(ap_game_state.ap_item_queue.begin());
         ap_get_item(item_id, false);
     }
+}
+
+// This is called from the main game loop to ensure these checks happen globally
+bool ap_process_periodic(void)
+{
+    bool reset_game = false;
+
+    // Sync our save status, this only does something if there are changes
+    // So it's save to call it every game tic
+    AP_SyncProgress();
+
+    // Check if we have reached all goals
+    if (AP_CheckVictory())
+    {
+        // ToDo seems to not return to main menu as expected?
+        ud.volume_number = 2;
+        ud.eog = 1;
+        G_BonusScreen(0);
+        ap_return_to_menu = 0;
+        G_BackToMenu();
+        reset_game = true;
+    }
+
+    return reset_game;
 }
 
 /* Configures the default inventory state */
@@ -773,6 +799,8 @@ void ap_store_dynamic_player_data(void)
     new_player_data["selected_inv"] = Json::Int(icon_to_inv[ACTIVE_PLAYER->inven_icon]);
 
     ap_game_state.dynamic_player["player"] = new_player_data;
+    // Mark our save state as to be synced
+    ap_game_state.need_sync = true;
 }
 
 void ap_sync_inventory()

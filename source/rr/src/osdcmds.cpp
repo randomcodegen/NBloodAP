@@ -137,7 +137,7 @@ static int osdcmd_changelevel(osdcmdptr_t parm)
     {
         std::string level_str = ap_format_map_id(level, volume);
         Json::Value level_data = ap_level_data[level_str];
-        if (!(AP_HasItem(AP_NET_ID(level_data["unlock"].asInt()))))
+        if (!(AP_HasItem(AP_NET_ID(level_data["unlock"].asInt64()))))
         {
             OSD_Printf("changelevel: Level not unlocked yet\n");
             return OSDCMD_OK;
@@ -1443,6 +1443,19 @@ static int osdcmd_cvar_set_multi(osdcmdptr_t parm)
     return r;
 }
 
+#ifdef AP_DEBUG_ON
+static int osdcmd_ap_item(osdcmdptr_t parm)
+{
+    ap_net_id_t item_id=0;
+    char *p;
+
+    if (parm->numparms != 1) return OSDCMD_SHOWHELP;
+
+    item_id = AP_NET_ID(strtol(parm->parms[0], &p, 10));
+    AP_ItemReceived(item_id, 0, true);
+}
+#endif
+
 int32_t registerosdcommands(void)
 {
     FX_InitCvars();
@@ -1700,6 +1713,9 @@ int32_t registerosdcommands(void)
     OSD_RegisterFunction("unbound", NULL, osdcmd_unbound);
 
     OSD_RegisterFunction("vidmode","vidmode <xdim> <ydim> <bpp> <fullscreen>: change the video mode",osdcmd_vidmode);
+#ifdef AP_DEBUG_ON
+    OSD_RegisterFunction("ap_item","ap_item <id>: Gives AP Item", osdcmd_ap_item);
+#endif
 #ifdef USE_OPENGL
     baselayer_osdcmd_vidmode_func = osdcmd_vidmode;
 #endif

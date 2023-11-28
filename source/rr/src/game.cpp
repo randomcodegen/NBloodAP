@@ -8813,6 +8813,11 @@ MAIN_LOOP_RESTART:
                         // a frame since we're fucked anyway
                         break;
                     }
+
+                    // [AP] Check victory and save progress
+                    if (AP)
+                        if (ap_process_periodic())
+                            goto MAIN_LOOP_RESTART;
                 }
                 while (((g_netClient || g_netServer) || !(g_player[myconnectindex].ps->gm & (MODE_MENU|MODE_DEMO))) && totalclock >= ototalclock+TICSPERFRAME);
 

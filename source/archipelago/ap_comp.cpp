@@ -17,6 +17,7 @@ typedef struct {
 std::map<ap_net_id_t, ap_comp_loc_info_t> ap_comp_loc_infos;
 std::map<ap_net_id_t, std::string> ap_comp_loc_names;
 std::vector<ap_net_id_t> ap_starting_inv;
+std::map<std::string, void (*)(std::string)> slotdata_callback;
 
 void AP_SendItem_Compat(int64_t idx)
 {
@@ -37,34 +38,38 @@ void AP_Init_Compat(const char* ip, const char* game, const char* player_name, c
 // Not exposed with a header we could include from this layer, need this for the compatibility implementation to
 // get the game data somehow
 extern Json::Value read_json_from_grp(const char* filename);
+Json::Value world_info;
 
 void AP_Init_Compat(const char* filename)
 {
-	Json::Value world_info = read_json_from_grp(filename);
+	world_info = read_json_from_grp(filename);
+}
 
+
+void AP_Start_Compat()
+{
     // World mappings
-	for (std::string loc_str : world_info["locations"].getMemberNames())
-	{
-		int64_t loc_id = AP_NET_ID(std::stoi(loc_str));
-		ap_comp_loc_info_t loc_info = {0, AP_NET_ID(world_info["locations"][loc_str]["item"].asInt())};
-		if (world_info["locations"][loc_str]["progression"].asBool())
-			loc_info.flags = 0b001;
-		ap_comp_loc_infos[loc_id] = loc_info;
-	}
+    for (std::string loc_str : world_info["location_to_item"].getMemberNames())
+    {
+        int64_t loc_id = AP_NET_ID(std::stoll(loc_str));
+        ap_comp_loc_info_t loc_info = {0, AP_NET_ID(world_info["location_to_item"][loc_str].asInt64())};
+        loc_info.flags = 0b001;
+        ap_comp_loc_infos[loc_id] = loc_info;
+    }
     // Starting inventory
     ap_starting_inv.clear();
-    for (unsigned int i = 0; i < world_info["inventory"].size(); i++)
-        ap_starting_inv.push_back(AP_NET_ID(world_info["inventory"][i].asInt()));
+    for (unsigned int i = 0; i < world_info["start_inventory"].size(); i++)
+        ap_starting_inv.push_back(AP_NET_ID(world_info["start_inventory"][i].asInt64()));
 
-	// Build up location names for all locations
+    // Build up location names for all locations
     auto locations = ap_game_config["locations"];
     for (std::string level_name : locations.getMemberNames())
     {
         for (std::string sprite_id : locations[level_name]["sprites"].getMemberNames())
         {
-            if (locations[level_name]["sprites"][sprite_id]["id"].isInt())
+            if (locations[level_name]["sprites"][sprite_id]["id"].isInt64())
             {
-                ap_net_id_t location_id = AP_NET_ID(locations[level_name]["sprites"][sprite_id]["id"].asInt());
+                ap_net_id_t location_id = AP_NET_ID(locations[level_name]["sprites"][sprite_id]["id"].asInt64());
                 ap_comp_loc_names[location_id] = level_name + ": " + locations[level_name]["sprites"][sprite_id]["name"].asString();
             }
         }
@@ -74,9 +79,9 @@ void AP_Init_Compat(const char* filename)
     {
         for (std::string sector_id : locations[level_name]["sectors"].getMemberNames())
         {
-            if (locations[level_name]["sectors"][sector_id]["id"].isInt())
+            if (locations[level_name]["sectors"][sector_id]["id"].isInt64())
             {
-                ap_net_id_t location_id = AP_NET_ID(locations[level_name]["sectors"][sector_id]["id"].asInt());
+                ap_net_id_t location_id = AP_NET_ID(locations[level_name]["sectors"][sector_id]["id"].asInt64());
                 ap_comp_loc_names[location_id] = level_name + " Secret: " + locations[level_name]["sectors"][sector_id]["name"].asString();
             }
         }
@@ -86,23 +91,24 @@ void AP_Init_Compat(const char* filename)
     {
         for (std::string exit_tag : locations[level_name]["exits"].getMemberNames())
         {
-            if (locations[level_name]["exits"][exit_tag]["id"].isInt())
+            if (locations[level_name]["exits"][exit_tag]["id"].isInt64())
             {
-                ap_net_id_t location_id = AP_NET_ID(locations[level_name]["exits"][exit_tag]["id"].asInt());
+                ap_net_id_t location_id = AP_NET_ID(locations[level_name]["exits"][exit_tag]["id"].asInt64());
                 ap_comp_loc_names[location_id] = level_name + ": " + locations[level_name]["exits"][exit_tag]["name"].asString();
             }
         }
     }
 
-    // Load settings
-    for (std::string setting_name : world_info["settings"].getMemberNames())
+    // Load slot_data
+    for (std::string setting_name : world_info["slot_data"].getMemberNames())
     {
-        ap_game_settings[setting_name] = world_info["settings"][setting_name];
+        Json::FastWriter writer;
+        if (slotdata_callback.count(setting_name))
+        {
+            slotdata_callback[setting_name](writer.write(world_info["slot_data"][setting_name]));
+        }
     }
-}
 
-void AP_Start_Compat()
-{
     if (getitemfunc == nullptr) return;
     for (ap_net_id_t item_id : ap_starting_inv)
         getitemfunc(item_id, 0, true);
@@ -157,19 +163,51 @@ AP_DataPackageSyncStatus AP_GetDataPackageStatus_Compat()
 	return AP_DataPackageSyncStatus::Synced;
 }
 
-std::vector<int64_t> AP_GetGameLocations_Compat()
-{
-	std::vector<int64_t> ret;
-	for ( const auto &entry : ap_comp_loc_infos)
-	{
-		ret.push_back(entry.first);
-	}
-	return ret;
-}
-
 std::string AP_GetLocationName_Compat(int64_t location_id)
 {
 	return ap_comp_loc_names.count(location_id) ? ap_comp_loc_names.at(location_id) : std::string("Unknown location");
+}
+
+void AP_SetServerData_Compat(AP_SetServerDataRequest* request)
+{
+    // ToDo maybe persist this? Don't really care much for compat mode
+    request->status = AP_RequestStatus::Done;
+}
+
+void AP_GetServerData_Compat(AP_GetServerDataRequest* request)
+{
+    // ToDo maybe get from persistent storage?
+    switch (request->type) {
+    case AP_DataType::Int:
+        *((int*)request->value) = 0;
+        break;
+    case AP_DataType::Double:
+        *((double*)request->value) = 0;
+        break;
+    case AP_DataType::Json:
+        *((Json::Value*)request->value) = Json::Value();
+        break;
+    case AP_DataType::Raw:
+        *((std::string*)request->value) = "";
+        break;
+    }
+    request->status = AP_RequestStatus::Done;
+}
+
+std::string AP_GetPrivateServerDataPrefix_Compat()
+{
+    // ToDo use seed from def?
+    return "abc";
+}
+
+void AP_StoryComplete_Compat(void)
+{
+
+}
+
+void AP_RegisterSlotDataRawCallback_Compat(std::string key, void (*f_slotdata)(std::string))
+{
+    slotdata_callback[key] = f_slotdata;
 }
 
 #endif

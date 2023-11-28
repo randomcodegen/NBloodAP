@@ -101,6 +101,7 @@ typedef struct {
     std::map<ap_net_id_t, uint16_t> progressive;  // Counts for each progressive item applied. Can be safely cleared when reapplying all items to keep track again
     std::vector<ap_net_id_t> ap_item_queue;  // Queue of items to be provided to the player whenever he's in-game
     Json::Value dynamic_player;  // Game specific dynamic state. This should be conserved, but contains no progression relevant information
+    bool need_sync;  // Flag specifying relevant data was changed. If set, will be synced to the AP Server on next opportunity
 } ap_state_t;
 
 extern ap_state_t ap_game_state;
@@ -114,6 +115,13 @@ extern uint16_t AP_ItemCount(ap_net_id_t id);
 extern uint16_t AP_ProgressiveItem(ap_net_id_t id);
 
 extern int32_t AP_CheckLocation(ap_location_t loc);
+extern void AP_SyncProgress(void);  // Syncs ap_game_state to server
+
+extern std::map<ap_net_id_t, uint16_t> ap_goals;
+
+extern void AP_ItemReceived(int64_t item_id, int slot, bool notify);
+extern bool AP_CheckVictory(void);  //Check if goals have been fulfilled for the first time
+extern bool AP_IsLevelUsed(ap_net_id_t unlock_key);
 
 #ifdef __cplusplus
 }

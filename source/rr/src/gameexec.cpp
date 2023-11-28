@@ -2045,7 +2045,9 @@ GAMEEXEC_STATIC void VM_Execute(native_t loop)
                 insptr++;
                 pPlayer->timebeforeexit  = *insptr++;
                 pPlayer->customexitsound = -1;
-                ud.eog                   = 1;
+                // [AP] Handle End of Game state from goal checks in AP mode instead
+                if (!AP)
+                    ud.eog                   = 1;
                 continue;
 
             case CON_ISDRUNK:
@@ -2948,7 +2950,7 @@ GAMEEXEC_STATIC void VM_Execute(native_t loop)
 
             case CON_APPROCESSQUEUE:
                 insptr++;
-                ap_process_event_queue();
+                ap_process_game_tic();
                 continue;
 
             case CON_IFAPCOLLECTED:
