@@ -176,7 +176,6 @@ void AP_ClearAllItems()
 {
    ap_game_state.ap_item_queue.clear();
    ap_game_state.persistent.clear();
-   ap_game_state.need_sync = true;
 }
 
 void AP_ItemReceived(int64_t item_id, int slot, bool notify)
@@ -203,9 +202,6 @@ void AP_ItemReceived(int64_t item_id, int slot, bool notify)
     // If we should tell the player about the item, put it into the item queue
     if (notify)
         ap_game_state.ap_item_queue.push_back(item_id);
-
-    // Mark our save state as to be synced
-    ap_game_state.need_sync = true;
 }
 
 void AP_ExtLocationCheck(int64_t location_id)
