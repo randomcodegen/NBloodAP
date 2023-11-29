@@ -608,7 +608,7 @@ static void ap_get_item(ap_net_id_t item_id, bool silent)
         }
         P_AddAmmo(ACTIVE_PLAYER, json_get_int(item_info["weaponnum"], 0), json_get_int(item_info["ammo"], 0));
     }
-    else if (item_type == "maxammo")
+    else if (item_type == "ammo" || item_type == "maxammo")
     {
         int64_t weaponnum = json_get_int(item_info["weaponnum"], 0);
         if (weaponnum >= MAX_WEAPONS) return;  // Limit to valid weapons
