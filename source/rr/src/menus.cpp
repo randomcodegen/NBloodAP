@@ -4077,7 +4077,7 @@ static void Menu_EntryFocus(/*MenuEntry_t *entry*/)
 static void Menu_StartGameWithoutSkill(void)
 {
     // [AP] Just use the defined difficulty level for the seed
-    ud.m_player_skill = AP ? 0 : M_SKILL.currentEntry+1; // ToDo use difficulty level from AP seed
+    ud.m_player_skill = AP ? ap_game_settings["difficulty"].asInt() + 1 : M_SKILL.currentEntry+1;
 
     g_skillSoundVoice = S_PlaySound(RR ? 341 : (REALITY ? 0x33 : PISTOL_BODYHIT));
 
@@ -4199,7 +4199,7 @@ static void Menu_EntryLinkActivate(MenuEntry_t *entry)
 
     case MENU_AP_LEVEL:
         ap_select_level(M_LEVEL.currentEntry);
-        ud.m_player_skill = 0; // ToDo select skill from ap seed
+        ud.m_player_skill = ap_game_settings["difficulty"].asInt() + 1;
         ud.multimode = 1;
         // [AP] If we switch level from in-game, keep player state
         ap_store_dynamic_player_data();
