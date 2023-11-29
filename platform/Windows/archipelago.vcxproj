@@ -37,6 +37,9 @@
     <ClCompile Include="..\..\source\archipelago\ap_log.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="APCpp\APCpp.vcxproj">
+      <Project>{4836c78f-0735-301d-90fa-dc7334b636ad}</Project>
+    </ProjectReference>
     <ProjectReference Include="build.vcxproj">
       <Project>{dbecb851-5624-4fa8-9a9d-7169d0f12ff1}</Project>
     </ProjectReference>

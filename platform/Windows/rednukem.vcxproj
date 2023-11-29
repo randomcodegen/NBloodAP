@@ -135,16 +135,17 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>APCpp_debug.lib;jsoncpp_debug.lib;ixwebsocket.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>crypt32.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>XCOPY "$(SolutionDir)"\lib\APCpp\APCpp_debug.DLL "$(TargetDir)\APCpp.dll" /D /K /Y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
-      <AdditionalDependencies>APCpp.lib;jsoncpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>crypt32.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -159,7 +160,8 @@
       <DebugInformationFormat>None</DebugInformationFormat>
     </ClCompile>
     <PostBuildEvent>
-      <Command>XCOPY "$(SolutionDir)"\lib\APCpp\*.DLL "$(TargetDir)" /D /K /Y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -273,6 +275,9 @@
     <ClCompile Include="..\..\source\rr\src\winbits.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="APCpp\jsoncpp\src\lib_json\jsoncpp_static.vcxproj">
+      <Project>{fb38ebd2-aa6f-3443-8153-3930ec95bea3}</Project>
+    </ProjectReference>
     <ProjectReference Include="archipelago.vcxproj">
       <Project>{87540def-98b9-459b-bbc8-6b3ccedbab42}</Project>
     </ProjectReference>

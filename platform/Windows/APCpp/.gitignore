@@ -1,0 +1,6 @@
+# Ignore everything. This part of the solution can be generated dynamically with
+# cmake ../../../APCpp -G "Visual Studio 17 2022" -A x64
+*
+**
+*.*
+!.gitignore
