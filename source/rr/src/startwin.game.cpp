@@ -65,17 +65,21 @@ static int done = -1;
 static int mode = TAB_CONFIG;
 
 static BUILDVFS_FIND_REC *finddirs;
+static BUILDVFS_FIND_REC *findspworlds;
 
 static inline void clearfilenames(void)
 {
     klistfree(finddirs);
     finddirs = NULL;
+    klistfree(findspworlds);
+    findspworlds = NULL;
 }
 
 static inline void getfilenames(char const *path)
 {
     clearfilenames();
     finddirs = klistpath(path,"*",BUILDVFS_FIND_DIR);
+    findspworlds = klistpath(path,"*.spworld",BUILDVFS_FIND_FILE);
 }
 
 #define POPULATE_VIDEO 1
@@ -101,10 +105,11 @@ static void PopulateForm(int32_t pgs)
     if (pgs & POPULATE_GAMEDIRS)
     {
         HWND hwnd = GetDlgItem(pages[TAB_CONFIG], IDCGAMEDIR);
+        HWND hwndsp = GetDlgItem(pages[TAB_CONFIG], IDCAPLOCALGAME);
 
         getfilenames("/");
         (void)ComboBox_ResetContent(hwnd);
-        int const r = ComboBox_AddString(hwnd, "None");
+        int r = ComboBox_AddString(hwnd, "None");
         (void)ComboBox_SetItemData(hwnd, r, 0);
         (void)ComboBox_SetCurSel(hwnd, r);
         auto dirs = finddirs;
@@ -123,6 +128,31 @@ static void PopulateForm(int32_t pgs)
 
             i++;
             j++;
+        }
+
+        (void)ComboBox_ResetContent(hwndsp);
+        r = ComboBox_AddString(hwndsp, "None");
+        (void)ComboBox_SetItemData(hwndsp, r, 0);
+        (void)ComboBox_SetCurSel(hwndsp, r);
+        auto spfiles = findspworlds;
+        bool local_found = false;
+        for (int i=1, j=1; spfiles != NULL; spfiles=spfiles->next)
+        {
+            (void)ComboBox_AddString(hwndsp, spfiles->name);
+            (void)ComboBox_SetItemData(hwndsp, i, j);
+            if (Bstrcasecmp(spfiles->name, settings.shared.ap_local) == 0)
+            {
+                (void)ComboBox_SetCurSel(hwndsp, i);
+                local_found = true;
+            }
+
+            i++;
+            j++;
+        }
+        // Whatever local world we last played no longer exists, clear setting
+        if (!local_found)
+        {
+            Bmemset(settings.shared.ap_local, 0, MAXAPSETTING);
         }
     }
 
@@ -217,6 +247,23 @@ static void PopulateForm(int32_t pgs)
                 (void)ListBox_SetCurSel(hwnd, j);
         }
     }
+
+    // [AP] Load AP setting strings
+    if (Bstrlen(settings.shared.ap_server) > 0)
+    {
+        HWND hwnd = GetDlgItem(pages[TAB_CONFIG], IDCAPSERVER);
+        SetWindowText(hwnd, settings.shared.ap_server);
+    }
+    if (Bstrlen(settings.shared.ap_user) > 0)
+    {
+        HWND hwnd = GetDlgItem(pages[TAB_CONFIG], IDCAPUSER);
+        SetWindowText(hwnd, settings.shared.ap_user);
+    }
+    if (Bstrlen(settings.shared.ap_pass) > 0)
+    {
+        HWND hwnd = GetDlgItem(pages[TAB_CONFIG], IDCAPPASSWORD);
+        SetWindowText(hwnd, settings.shared.ap_pass);
+    }
 }
 
 static INT_PTR CALLBACK ConfigPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -306,6 +353,30 @@ static INT_PTR CALLBACK ConfigPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                 }
             }
             return TRUE;
+        case IDCAPLOCALGAME:
+            if (HIWORD(wParam) == CBN_SELCHANGE)
+            {
+                int i = ComboBox_GetCurSel((HWND)lParam);
+                if (i != CB_ERR) i = ComboBox_GetItemData((HWND)lParam, i);
+                if (i != CB_ERR)
+                {
+                    if (i==0)
+                        Bmemset(settings.shared.ap_local, 0, MAXAPSETTING);
+                    else
+                    {
+                        BUILDVFS_FIND_REC *spwld = findspworlds;
+                        for (int j = 1; spwld != NULL; spwld = spwld->next, j++)
+                        {
+                            if (j == i)
+                            {
+                                Bstrcpy(settings.shared.ap_local, spwld->name);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return TRUE;
         case IDCDATA:
         {
             if (HIWORD(wParam) != LBN_SELCHANGE) break;
@@ -315,6 +386,24 @@ static INT_PTR CALLBACK ConfigPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
             {
                 settings.grp = (grpfile_t const *)i;
             }
+            return TRUE;
+        }
+        case IDCAPSERVER:
+        {
+            if (HIWORD(wParam) != EN_CHANGE) break;
+            GetWindowText((HWND)lParam, settings.shared.ap_server, MAXAPSETTING);
+            return TRUE;
+        }
+        case IDCAPUSER:
+        {
+            if (HIWORD(wParam) != EN_CHANGE) break;
+            GetWindowText((HWND)lParam, settings.shared.ap_user, MAXAPSETTING);
+            return TRUE;
+        }
+        case IDCAPPASSWORD:
+        {
+            if (HIWORD(wParam) != EN_CHANGE) break;
+            GetWindowText((HWND)lParam, settings.shared.ap_pass, MAXAPSETTING);
             return TRUE;
         }
         default:
@@ -350,6 +439,10 @@ static void EnableConfig(bool n)
     EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCINPUT), n);
     EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCPOLYMER), n);
     EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCVMODE), n);
+    EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCAPLOCALGAME), n);
+    EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCAPSERVER), n);
+    EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCAPUSER), n);
+    EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCAPPASSWORD), n);
 }
 
 static INT_PTR CALLBACK startup_dlgproc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)

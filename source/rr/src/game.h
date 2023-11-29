@@ -136,6 +136,7 @@ void A_DeleteSprite(int spriteNum);
 #define MAXSAVEGAMENAME (MAXSAVEGAMENAMESTRUCT-1)
 #define MAXPWLOCKOUT 128
 #define MAXRTSNAME 128
+#define MAXAPSETTING 128
 
 #define MAX_RETURN_VALUES 6
 
@@ -150,6 +151,11 @@ typedef struct {
     int32_t bpp;
     int32_t forcesetup;
     int32_t noautoload;
+    // [AP] Persist AP configuration choices as user defines
+    char ap_server[MAXAPSETTING];
+    char ap_user[MAXAPSETTING];
+    char ap_pass[MAXAPSETTING];
+    char ap_local[MAXAPSETTING];
 } ud_setup_t;
 
 typedef struct {

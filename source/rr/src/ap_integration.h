@@ -31,3 +31,4 @@ extern std::vector<std::vector<uint8_t>> ap_active_levels;
 extern std::map<std::string, Json::Value> ap_level_data;
 
 extern uint8_t ap_return_to_menu;
+extern ap_connection_settings_t ap_connection_settings;

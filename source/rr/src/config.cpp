@@ -850,6 +850,12 @@ int32_t CONFIG_ReadSetup(void)
     SCRIPT_GetNumber(ud.config.scripthandle, "Updates", "LastUpdateCheck", &ud.config.LastUpdateCheck);
 #endif
 
+    // [AP] Read connection settings
+    SCRIPT_GetString(ud.config.scripthandle, "AP", "Local", ud.setup.ap_local);
+    SCRIPT_GetString(ud.config.scripthandle, "AP", "Server", ud.setup.ap_server);
+    SCRIPT_GetString(ud.config.scripthandle, "AP", "User", ud.setup.ap_user);
+    SCRIPT_GetString(ud.config.scripthandle, "AP", "Password", ud.setup.ap_pass);
+
     ud.config.setupread = 1;
     return 0;
 }
@@ -943,6 +949,13 @@ void CONFIG_WriteSetup(uint32_t flags)
     if (g_noSetup == 0)
         SCRIPT_PutString(ud.config.scripthandle, "Setup","ModDir",&g_modDir[0]);
 #endif
+
+    // [AP] Connection settings
+    SCRIPT_PutString(ud.config.scripthandle, "AP", "Local", ud.setup.ap_local);
+    SCRIPT_PutString(ud.config.scripthandle, "AP", "Server", ud.setup.ap_server);
+    SCRIPT_PutString(ud.config.scripthandle, "AP", "User", ud.setup.ap_user);
+    SCRIPT_PutString(ud.config.scripthandle, "AP", "Password", ud.setup.ap_pass);
+
     // exit early after only updating the values that can be changed from the startup window
     if (flags & 1)
     {

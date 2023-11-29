@@ -351,6 +351,22 @@ static void ap_mark_known_secret_sectors(void)
 */
 void ap_startup(void)
 {
+    // [AP] Get connection settings from user defs
+    ap_connection_settings.mode = AP_DISABLED;
+    if (Bstrlen(ud.setup.ap_local) > 0)
+    {
+        ap_connection_settings.mode = AP_LOCAL;
+        ap_connection_settings.sp_world = ud.setup.ap_local;
+    }
+    else if (Bstrlen(ud.setup.ap_user) > 0)
+    {
+        ap_connection_settings.mode = AP_SERVER;
+        ap_connection_settings.player = ud.setup.ap_user;
+        ap_connection_settings.ip = ud.setup.ap_server;
+        ap_connection_settings.password = ud.setup.ap_pass;
+    }
+    if (ap_connection_settings.mode == AP_DISABLED) return;
+
     // [AP] Always load our patch groups and set the main con file
     // ToDo find a better way to do this with dependency chaining?
     // Eventually this might become entirely unnecessary if we get the grp
@@ -440,14 +456,14 @@ void ap_parse_levels()
 
 }
 
+ap_connection_settings_t ap_connection_settings = {AP_DISABLED, "", "", "", "", ""};
+
 void ap_initialize(void)
 {
     Json::Value game_ap_config = read_json_from_grp("ap_config.json");
 
-    // ToDo get from settings window/cli
-    ap_connection_settings_t connection = {AP_LOCAL, "localhost:38281", "Duke3D", "Tarrik", "", "local_world.json"};
-
-    AP_Initialize(game_ap_config, connection);
+    ap_connection_settings.game = game_ap_config["game"].asCString();
+    AP_Initialize(game_ap_config, ap_connection_settings);
 
     if (AP)
     {

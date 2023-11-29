@@ -128,6 +128,15 @@ static void set_used_levels(std::string json)
     }
 }
 
+static std::string remote_id_checksum;
+
+static void set_id_checksums(std::string json)
+{
+    Json::Value checksum;
+    ap_reader.parse(json, checksum);
+    remote_id_checksum = checksum.asString();
+}
+
 static void set_settings(std::string json)
 {
     Json::Value settings;
@@ -259,6 +268,12 @@ bool sync_wait_for_data(uint32_t timeout)
         }
     }
 
+    // Should have the id checksum from slot data by now, verify it matches our loaded ap_config.json
+    if (strcmp(ap_game_config["checksum"].asCString(), remote_id_checksum.c_str())) {
+        printf("AP: Remote server item/location IDs don't match locally loaded configuration.\n");
+        return TRUE;
+    }
+
     ap_reader.parse(serialized_save_data, save_data);
 
     initialize_save_data(save_data);
@@ -287,7 +302,7 @@ uint16_t AP_ProgressiveItem(ap_net_id_t id)
 
 void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection)
 {
-    if (game_config == NULL || connection.mode != AP_LOCAL) return; // ToDo should be == AP_DISABLED, but only have local games supported for now with the comp layer
+    if (game_config == NULL || connection.mode == AP_DISABLED) return;
     ap_game_id = game_config["game_id"].asUInt() & AP_GAME_ID_MASK;
     if (ap_game_id == 0) return;
 
@@ -295,8 +310,12 @@ void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection)
     init_item_table(game_config["items"]);
     ap_game_config = game_config;
 
-    //AP_Init(connection.sp_world);
-    AP_Init(connection.ip, connection.game, connection.player, connection.password);
+    if (connection.mode == AP_SERVER)
+        AP_Init(connection.ip, connection.game, connection.player, connection.password);
+    else if (connection.mode == AP_LOCAL)
+        AP_Init(connection.sp_world);
+    else
+        return;
     AP_SetItemClearCallback(&AP_ClearAllItems);
     AP_SetItemRecvCallback(&AP_ItemReceived);
     AP_SetLocationCheckedCallback(&AP_ExtLocationCheck);
@@ -305,6 +324,7 @@ void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection)
     AP_RegisterSlotDataRawCallback("locations", &set_available_locations);
     AP_RegisterSlotDataRawCallback("settings", &set_settings);
     AP_RegisterSlotDataRawCallback("levels", &set_used_levels);
+    AP_RegisterSlotDataRawCallback("checksum", &set_id_checksums);
     AP_Start();
 
     if(sync_wait_for_data(10000))
