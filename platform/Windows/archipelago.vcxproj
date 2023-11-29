@@ -27,12 +27,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\source\archipelago\ap_comp.h" />
     <ClInclude Include="..\..\source\archipelago\ap_lib.h" />
     <ClInclude Include="..\..\source\archipelago\ap_log.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\source\archipelago\ap_comp.cpp" />
     <ClCompile Include="..\..\source\archipelago\ap_lib.cpp" />
     <ClCompile Include="..\..\source\archipelago\ap_log.cpp" />
   </ItemGroup>

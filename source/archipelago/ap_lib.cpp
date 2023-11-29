@@ -1,5 +1,5 @@
 #include "ap_lib.h"
-#include "ap_comp.h"
+#include "Archipelago.h"
 #include "compat.h"
 #include <chrono>
 #include <thread>
@@ -113,7 +113,7 @@ static void set_available_locations(std::string json)
         }
     }
     // Send out a location scout package for them so we can see which ones are progressive
-    AP_SendLocationScouts_Compat(scout_reqs, FALSE);
+    AP_SendLocationScouts(scout_reqs, FALSE);
 }
 
 static void set_used_levels(std::string json)
@@ -155,10 +155,10 @@ int32_t AP_CheckLocation(ap_location_t loc)
         return 0;
     // Forward check to AP server
     ap_net_id_t net_loc = AP_NET_ID(loc);
-    AP_SendItem_Compat(AP_NET_ID(net_loc));
+    AP_SendItem(AP_NET_ID(net_loc));
     ap_locations[loc].state |= AP_LOC_CHECKED;
     // And note the location check in the console
-    AP_Printf(("New Check: " + AP_GetLocationName_Compat(net_loc)).c_str());
+    AP_Printf(("New Check: " + AP_GetLocationName(net_loc)).c_str());
     return 1;
 }
 
@@ -239,17 +239,17 @@ bool sync_wait_for_data(uint32_t timeout)
 
     AP_GetServerDataRequest save_req = {
         AP_RequestStatus::Pending,
-        AP_GetPrivateServerDataPrefix_Compat() + "_save_data",
+        AP_GetPrivateServerDataPrefix() + "_save_data",
         (void *)&serialized_save_data,
         AP_DataType::Raw
     };
 
     // Request save data from server
-    AP_GetServerData_Compat(&save_req);
+    AP_GetServerData(&save_req);
 
     // Wait for server connection and data package exchange to occur
     auto start_time = std::chrono::steady_clock::now();
-    while ((AP_GetDataPackageStatus_Compat() != AP_DataPackageSyncStatus::Synced) && (save_req.status != AP_RequestStatus::Done))
+    while ((AP_GetDataPackageStatus() != AP_DataPackageSyncStatus::Synced) && (save_req.status != AP_RequestStatus::Done))
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         if (std::chrono::steady_clock::now() - start_time > std::chrono::milliseconds(timeout))
@@ -295,21 +295,21 @@ void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection)
     init_item_table(game_config["items"]);
     ap_game_config = game_config;
 
-    //AP_Init_Compat(connection.sp_world);
-    AP_Init_Compat(connection.ip, connection.game, connection.player, connection.password);
-    AP_SetItemClearCallback_Compat(&AP_ClearAllItems);
-    AP_SetItemRecvCallback_Compat(&AP_ItemReceived);
-    AP_SetLocationCheckedCallback_Compat(&AP_ExtLocationCheck);
-    AP_SetLocationInfoCallback_Compat(&AP_LocationInfo);
-    AP_RegisterSlotDataRawCallback_Compat("goal", &set_goals);
-    AP_RegisterSlotDataRawCallback_Compat("locations", &set_available_locations);
-    AP_RegisterSlotDataRawCallback_Compat("settings", &set_settings);
-    AP_RegisterSlotDataRawCallback_Compat("levels", &set_used_levels);
-    AP_Start_Compat();
+    //AP_Init(connection.sp_world);
+    AP_Init(connection.ip, connection.game, connection.player, connection.password);
+    AP_SetItemClearCallback(&AP_ClearAllItems);
+    AP_SetItemRecvCallback(&AP_ItemReceived);
+    AP_SetLocationCheckedCallback(&AP_ExtLocationCheck);
+    AP_SetLocationInfoCallback(&AP_LocationInfo);
+    AP_RegisterSlotDataRawCallback("goal", &set_goals);
+    AP_RegisterSlotDataRawCallback("locations", &set_available_locations);
+    AP_RegisterSlotDataRawCallback("settings", &set_settings);
+    AP_RegisterSlotDataRawCallback("levels", &set_used_levels);
+    AP_Start();
 
     if(sync_wait_for_data(10000))
     {
-        AP_Shutdown_Compat();
+        AP_Shutdown();
         // ToDo Just abort entirely?
         AP_Errorf("Could not establish connection to Server in time.");
         return;
@@ -321,7 +321,7 @@ void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection)
 void AP_LibShutdown(void)
 {
     AP_SyncProgress();
-    AP_Shutdown_Compat();
+    AP_Shutdown();
 }
 
 void AP_SyncProgress(void)
@@ -337,14 +337,14 @@ void AP_SyncProgress(void)
     std::string serialized = ap_writer.write(save_data);
 
     AP_SetServerDataRequest req;
-    req.key = AP_GetPrivateServerDataPrefix_Compat() + "_save_data";
+    req.key = AP_GetPrivateServerDataPrefix() + "_save_data";
     AP_DataStorageOperation op = { "replace", &serialized };
     req.operations.push_back(op);
     req.type = AP_DataType::Raw;
     std::string default_value = "";
     req.default_value = &default_value;
 
-    AP_SetServerData_Compat(&req);
+    AP_SetServerData(&req);
 
     ap_game_state.need_sync = false;
 }
@@ -369,7 +369,7 @@ bool AP_CheckVictory(void)
     {
         // Send victory state to AP Server
         reached_goal = true;
-        AP_StoryComplete_Compat();
+        AP_StoryComplete();
     }
 
     return reached_goal;
