@@ -185,10 +185,11 @@ static void print_debug_level_info()
 // Prints a level template json for filling in location names
 static void print_level_template(void)
 {
-    Json::Value out;
+    Json::Value out = Json::arrayValue;
 
     for (unsigned int i = 0; i < Numsprites; i++)
     {
+        Json::Value loc = Json::objectValue; 
         switch (sprite[i].picnum)
         {
         case CHAINGUNSPRITE__STATIC:
@@ -210,8 +211,16 @@ static void print_level_template(void)
         case HOLODUKE__STATIC:
         case MONK__STATIC:
         case CANWITHSOMETHING2__STATIC:
-            out[std::to_string(i)]["id"] = (sprite[i].pal == 0 ? 1 : -1);
-            out[std::to_string(i)]["name"] = (sprite[i].pal == 0 ? "" : "MP ");
+        case ACCESSCARD__STATIC:
+            loc["name"] = std::to_string(i) +" ";
+            loc["id"] = i;
+            loc["type"] = "sprite";
+            if(sprite[i].pal == 0)
+            {
+                loc["name"] = "MP " + loc["name"].asString();
+                loc["mp"] = Json::booleanValue;
+                loc["mp"] = true;
+            }
             break;
         }
 
@@ -240,75 +249,105 @@ static void print_level_template(void)
             break;
         }
 
+        bool store = true;
         switch (sprite[i].picnum)
         {
         case CHAINGUNSPRITE__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Chaingun";
+            loc["name"] = loc["name"].asString() + "Chaingun";
             break;
         case RPGSPRITE__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "RPG";
+            loc["name"] = loc["name"].asString() + "RPG";
             break;
         case FREEZESPRITE__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Freezethrower";
+            loc["name"] = loc["name"].asString() + "Freezethrower";
             break;
         case SHRINKERSPRITE__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Shrinker";
+            loc["name"] = loc["name"].asString() + "Shrinker";
             break;
         case TRIPBOMBSPRITE__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Tripbomb";
+            loc["name"] = loc["name"].asString() + "Tripbomb";
             break;
         case SHOTGUNSPRITE__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Shotgun";
+            loc["name"] = loc["name"].asString() + "Shotgun";
             break;
         case DEVISTATORSPRITE__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Devastator";
+            loc["name"] = loc["name"].asString() + "Devastator";
             break;
         case HBOMBAMMO__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Pipebombs";
+            loc["name"] = loc["name"].asString() + "Pipebombs";
             break;
         case FIRSTAID__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Medkit";
+            loc["name"] = loc["name"].asString() + "Medkit";
             break;
         case SHIELD__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Armor";
+            loc["name"] = loc["name"].asString() + "Armor";
             break;
         case STEROIDS__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Steroids";
+            loc["name"] = loc["name"].asString() + "Steroids";
             break;
         case AIRTANK__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Scuba Gear";
+            loc["name"] = loc["name"].asString() + "Scuba Gear";
             break;
         case JETPACK__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Jetpack";
+            loc["name"] = loc["name"].asString() + "Jetpack";
             break;
         case HEATSENSOR__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Night Vision Goggles";
+            loc["name"] = loc["name"].asString() + "Night Vision Goggles";
             break;
         case ACCESSCARD__STATIC:
-            out[std::to_string(i)]["id"] = 1;
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + (sprite[i].pal == 0 ? "Blue " : (sprite[i].pal == 21 ? "Red " : "Yellow ")) + "Key Card";
+            loc["name"] = loc["name"].asString() + (sprite[i].pal == 0 ? "Blue " : (sprite[i].pal == 21 ? "Red " : "Yellow ")) + "Key Card";
             break;
         case BOOTS__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Protective Boots";
+            loc["name"] = loc["name"].asString() + "Protective Boots";
             break;
         case ATOMICHEALTH__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Atomic Health";
+            loc["name"] = loc["name"].asString() + "Atomic Health";
             break;
         case HOLODUKE__STATIC:
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Holo Duke";
+            loc["name"] = loc["name"].asString() + "Holo Duke";
             break;
         case MONK__STATIC:
-            if (!has_relevant_content) break;
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Monk";
-            out[std::to_string(i)]["type"] = "monk";
+            if (!has_relevant_content)
+            {
+                store = false;
+                break;
+            }
+            loc["name"] = loc["name"].asString() + "Monk";
+            loc["sprite_type"] = "monk";
             break;
         case CANWITHSOMETHING2__STATIC:
-            if (!has_relevant_content) break;
-            out[std::to_string(i)]["name"] = out[std::to_string(i)]["name"].asString() + "Trash Can";
-            out[std::to_string(i)]["type"] = "trashcan";
+            if (!has_relevant_content)
+            {
+                store = false;
+                break;
+            }
+            loc["name"] = loc["name"].asString() + "Trash Can";
+            loc["sprite_type"] = "trashcan";
             break;
+        default:
+            store = false;
+        }
+        if (store)
+            out.append(loc);
+    }
+
+    for (unsigned int i = 0; i < numsectors; i++)
+    {
+        if (sector[i].lotag == 32767)
+        {
+            Json::Value loc = Json::objectValue;
+            loc["name"] = "Secret";
+            loc["id"] = i;
+            loc["type"] = "sector";
+            out.append(loc);
         }
     }
+
+    Json::Value loc = Json::objectValue;
+    loc["name"] = "Exit";
+    loc["id"] = 0;
+    loc["type"] = "exit";
+    out.append(loc);
 
     Json::FastWriter writer;
     OutputDebugString(writer.write(out).c_str());
@@ -476,7 +515,7 @@ void ap_initialize(void)
 // Safe check if an item is scoped to a level
 static inline bool item_for_level(Json::Value& info, uint8_t level, uint8_t volume)
 {
-    return (info["levelnum"].isInt() && (info["levelnum"].asInt() == level)) && (info["volumenum"].isInt() && (info["volumenum"].asInt() == level));
+    return (info["levelnum"].isInt() && (info["levelnum"].asInt() == level)) && (info["volumenum"].isInt() && (info["volumenum"].asInt() == volume));
 }
 
 static inline bool item_for_current_level(Json::Value& info)
@@ -840,13 +879,17 @@ void ap_sync_inventory()
 
 void ap_on_map_load(void)
 {
-    ap_map_patch_sprites();
-
-    ap_mark_known_secret_sectors();
 #ifdef AP_DEBUG_ON
-    print_debug_level_info();
     print_level_template();
 #endif
+
+    ap_map_patch_sprites();
+
+#ifdef AP_DEBUG_ON
+    print_debug_level_info();
+#endif
+
+    ap_mark_known_secret_sectors();
 }
 
 void ap_on_save_load(void)

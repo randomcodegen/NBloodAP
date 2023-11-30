@@ -1359,7 +1359,6 @@ void G_DisplayRest(int32_t smoothratio)
                 Bsprintf(tempbuf, "AP:^15%d/%d", ap_collected, ap_total);
             else Bsprintf(tempbuf, "AP:%d/%d", ap_collected, ap_total);
             G_ScreenText(MF_Bluefont.tilenum, 2<<16, i-gtextsc(ystep*2), gtextsc(MF_Bluefont.zoom), 0, 0, tempbuf, 0, 10, 2|8|16|256|ROTATESPRITE_FULL16, 0, MF_Bluefont.emptychar.x, MF_Bluefont.emptychar.y, xbetween, MF_Bluefont.between.y, MF_Bluefont.textflags|textflags, 0, 0, xdim-1, ydim-1);
-
         }
 
         if (REALITY)
