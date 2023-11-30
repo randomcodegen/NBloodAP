@@ -578,7 +578,9 @@ void force_set_player_weapon(uint8_t weaponnum)
 void force_set_inventory_item(uint8_t invnum)
 {
     if (ACTIVE_PLAYER->inv_amount[invnum] > 0)
-        ACTIVE_PLAYER->inven_icon = inv_to_icon[invnum];
+        // No idea why displaying armor messes up?
+        if (inv_to_icon[invnum] != ICON_NONE && inv_to_icon[invnum] != ICON_SHIELD)
+            ACTIVE_PLAYER->inven_icon = inv_to_icon[invnum];
     else
         P_SelectNextInvItem(ACTIVE_PLAYER);
 }
