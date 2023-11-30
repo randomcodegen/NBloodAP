@@ -358,7 +358,7 @@ static void print_level_template(void)
   Marks all secret sectors corresponding to already checked
   locations as already collected.
 */
-static void ap_mark_known_secret_sectors(void)
+static void ap_mark_known_secret_sectors(bool from_save)
 {
     int32_t i;
     Json::Value cur_secret_locations = ap_game_config["locations"][current_map()]["sectors"];
@@ -379,7 +379,9 @@ static void ap_mark_known_secret_sectors(void)
                 ACTIVE_PLAYER->secret_rooms++;
                 // Also increase the max secret count for this one as the sector will no longer be tallied when
                 // the map is processed further
-                ACTIVE_PLAYER->max_secret_rooms++;
+                // Save files already have a valid max tally, so we can skip this when loading a save
+                if (!from_save)
+                    ACTIVE_PLAYER->max_secret_rooms++;
             }
         }
     }
@@ -707,6 +709,20 @@ static void ap_get_item(ap_net_id_t item_id, bool silent)
         if (item_info["enables"].isString())
             ability_unlocks[item_info["enables"].asString()] = 1;
     }
+    else if (item_type == "health")
+    {
+        uint16_t healing = json_get_int(item_info["heal"], 0);
+        // Non standard max health, like for atomic health
+        uint16_t capacity = json_get_int(item_info["capacity"], -1);
+        if (ACTIVE_PLAYER->max_player_health > capacity)
+            capacity = ACTIVE_PLAYER->max_player_health;
+        if (sprite[ACTIVE_PLAYER->i].extra < capacity)
+        {
+            sprite[ACTIVE_PLAYER->i].extra += healing;
+            if (sprite[ACTIVE_PLAYER->i].extra > capacity)
+                sprite[ACTIVE_PLAYER->i].extra = capacity;
+        }
+    }
 }
 
 // Called from an actor in game, ensures we are in a valid game state and an in game tic has expired since last call
@@ -889,12 +905,12 @@ void ap_on_map_load(void)
     print_debug_level_info();
 #endif
 
-    ap_mark_known_secret_sectors();
+    ap_mark_known_secret_sectors(false);
 }
 
 void ap_on_save_load(void)
 {
-    ap_mark_known_secret_sectors();
+    ap_mark_known_secret_sectors(true);
     ap_sync_inventory();
 }
 
