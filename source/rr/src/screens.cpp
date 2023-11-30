@@ -1331,7 +1331,7 @@ void G_DisplayRest(int32_t smoothratio)
             (myps->player_par/REALGAMETICSPERSEC)%60,
             ((myps->player_par%REALGAMETICSPERSEC)*33)/10
             );
-        G_ScreenText(MF_Bluefont.tilenum, 2<<16, i-gtextsc(ystep*(REALITY ? 4 : 3)), gtextsc(MF_Bluefont.zoom), 0, 0, tempbuf, 0, 10, 2|8|16|256|ROTATESPRITE_FULL16, 0, MF_Bluefont.emptychar.x, MF_Bluefont.emptychar.y, xbetween, MF_Bluefont.between.y, MF_Bluefont.textflags|textflags, 0, 0, xdim-1, ydim-1);
+        G_ScreenText(MF_Bluefont.tilenum, 2<<16, i-gtextsc(ystep*((REALITY ? 4 : 3) + (AP ? 1 : 0))), gtextsc(MF_Bluefont.zoom), 0, 0, tempbuf, 0, 10, 2|8|16|256|ROTATESPRITE_FULL16, 0, MF_Bluefont.emptychar.x, MF_Bluefont.emptychar.y, xbetween, MF_Bluefont.between.y, MF_Bluefont.textflags|textflags, 0, 0, xdim-1, ydim-1);
 
         if ((!RR && ud.player_skill > 3) || ((g_netServer || ud.multimode > 1) && !GTFLAGS(GAMETYPE_PLAYERSFRIENDLY)))
             Bsprintf(tempbuf, "K:^15%d", (ud.multimode>1 &&!GTFLAGS(GAMETYPE_PLAYERSFRIENDLY)) ?
@@ -1343,20 +1343,31 @@ void G_DisplayRest(int32_t smoothratio)
             else
                 Bsprintf(tempbuf, "K:^15%d/%d", myps->actors_killed, myps->max_actors_killed);
         }
-        G_ScreenText(MF_Bluefont.tilenum, 2<<16, i-gtextsc(ystep*(REALITY ? 3 : 2)), gtextsc(MF_Bluefont.zoom), 0, 0, tempbuf, 0, 10, 2|8|16|256|ROTATESPRITE_FULL16, 0, MF_Bluefont.emptychar.x, MF_Bluefont.emptychar.y, xbetween, MF_Bluefont.between.y, MF_Bluefont.textflags|textflags, 0, 0, xdim-1, ydim-1);
+        G_ScreenText(MF_Bluefont.tilenum, 2<<16, i-gtextsc(ystep*((REALITY ? 3 : 2) + (AP ? 1 : 0))), gtextsc(MF_Bluefont.zoom), 0, 0, tempbuf, 0, 10, 2|8|16|256|ROTATESPRITE_FULL16, 0, MF_Bluefont.emptychar.x, MF_Bluefont.emptychar.y, xbetween, MF_Bluefont.between.y, MF_Bluefont.textflags|textflags, 0, 0, xdim-1, ydim-1);
 
         if (myps->secret_rooms == myps->max_secret_rooms)
             Bsprintf(tempbuf, "S:%d/%d", myps->secret_rooms, myps->max_secret_rooms);
         else Bsprintf(tempbuf, "S:^15%d/%d", myps->secret_rooms, myps->max_secret_rooms);
         G_ScreenText(MF_Bluefont.tilenum, 2<<16, i-gtextsc(ystep), gtextsc(MF_Bluefont.zoom), 0, 0, tempbuf, 0, 10, 2|8|16|256|ROTATESPRITE_FULL16, 0, MF_Bluefont.emptychar.x, MF_Bluefont.emptychar.y, xbetween, MF_Bluefont.between.y, MF_Bluefont.textflags|textflags, 0, 0, xdim-1, ydim-1);
         
-        
+        if (AP)
+        {
+            uint16_t ap_collected = 0;
+            uint16_t ap_total = 0;
+            ap_remaining_items(&ap_collected, &ap_total);
+            if (ap_collected < ap_total)
+                Bsprintf(tempbuf, "AP:^15%d/%d", ap_collected, ap_total);
+            else Bsprintf(tempbuf, "AP:%d/%d", ap_collected, ap_total);
+            G_ScreenText(MF_Bluefont.tilenum, 2<<16, i-gtextsc(ystep*2), gtextsc(MF_Bluefont.zoom), 0, 0, tempbuf, 0, 10, 2|8|16|256|ROTATESPRITE_FULL16, 0, MF_Bluefont.emptychar.x, MF_Bluefont.emptychar.y, xbetween, MF_Bluefont.between.y, MF_Bluefont.textflags|textflags, 0, 0, xdim-1, ydim-1);
+
+        }
+
         if (REALITY)
         {
             Bsprintf(tempbuf, "B:%d/%d",
                 myps->dn64_36e, myps->dn64_36d
                 );
-            G_ScreenText(MF_Bluefont.tilenum, 2<<16, i-gtextsc(ystep*2), gtextsc(MF_Bluefont.zoom), 0, 0, tempbuf, 0, 10, 2|8|16|256|ROTATESPRITE_FULL16, 0, MF_Bluefont.emptychar.x, MF_Bluefont.emptychar.y, xbetween, MF_Bluefont.between.y, MF_Bluefont.textflags|textflags, 0, 0, xdim-1, ydim-1);
+            G_ScreenText(MF_Bluefont.tilenum, 2<<16, i-gtextsc(ystep*(AP ? 3 : 2)), gtextsc(MF_Bluefont.zoom), 0, 0, tempbuf, 0, 10, 2|8|16|256|ROTATESPRITE_FULL16, 0, MF_Bluefont.emptychar.x, MF_Bluefont.emptychar.y, xbetween, MF_Bluefont.between.y, MF_Bluefont.textflags|textflags, 0, 0, xdim-1, ydim-1);
 
             RT_EnablePolymost();
         }

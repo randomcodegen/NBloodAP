@@ -110,6 +110,9 @@ project.xcworkspace/
 /*.cfg_orig
 /*.DEM
 /*.DEM_
+/*.spworld
+/*.spworld.save
+/*.esv
 
 /platform/Windows/autoload
 /platform/Windows/movie

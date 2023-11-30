@@ -806,7 +806,7 @@ void G_DrawStatusBar(int32_t snum)
                     if (i >= 0)
                         rotatesprite_althudr(320-(231-o+85), hudoffset-21-2, sb15, 0, i, 0, 0, orient);
 
-                    if (p->inven_icon == 1 || p->inven_icon == 2)
+                    if (!AP && (p->inven_icon == 1 || p->inven_icon == 2))
                     {
                         if (videoGetRenderMode() >= REND_POLYMOST && althud_shadows)
                             minitextshade(320-(292-30-o+1+85), hudoffset-10-3+1, "%", 127, 4, POLYMOSTTRANS+orient+ROTATESPRITE_MAX);
@@ -916,7 +916,7 @@ void G_DrawStatusBar(int32_t snum)
 
                     if (REALITY)
                         rotatesprite_althud(292-30-o, hudoffset-10-3, sb16, 0, 3736, 0, 0, orient);
-                    else
+                    else if (!AP)
                     {
                         if (videoGetRenderMode() >= REND_POLYMOST && althud_shadows)
                             minitextshade(292-30-o+1, hudoffset-10-3+1, "%", 127, 4, POLYMOSTTRANS+orient+ROTATESPRITE_MAX);
@@ -1043,7 +1043,7 @@ void G_DrawStatusBar(int32_t snum)
                     orient |= ROTATESPRITE_MAX;
 
                     minitext_yofs = yofssh;
-                    if (p->inven_icon == 1 || p->inven_icon == 2)
+                    if (!AP && (p->inven_icon == 1 || p->inven_icon == 2))
                         minitext(292-30-o+10, 190, "%", 0, orient);
                     i = G_GetInvAmount(p);
 
@@ -1086,7 +1086,8 @@ void G_DrawStatusBar(int32_t snum)
                     orient |= ROTATESPRITE_MAX;
 
                     minitext_yofs = yofssh;
-                    minitext(292-30-o, 190, "%", 6, orient);
+                    if (!AP)
+                        minitext(292-30-o, 190, "%", 6, orient);
 
                     i = G_GetInvAmount(p);
                     j = G_GetInvOn(p);

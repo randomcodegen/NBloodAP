@@ -1453,6 +1453,8 @@ static int osdcmd_ap_item(osdcmdptr_t parm)
 
     item_id = AP_NET_ID(strtol(parm->parms[0], &p, 10));
     AP_ItemReceived(item_id, 0, true);
+
+    return OSDCMD_OK;
 }
 #endif
 
