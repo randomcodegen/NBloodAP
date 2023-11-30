@@ -1456,6 +1456,17 @@ static int osdcmd_ap_item(osdcmdptr_t parm)
 
     return OSDCMD_OK;
 }
+
+static int osdcmd_ap_unlock_all(osdcmdptr_t parm)
+{
+    for (auto item : ap_item_info)
+    {
+        if (item.second["type"].asString() == "map")
+            ap_game_state.persistent[AP_NET_ID(item.first)] = 1;
+    }
+
+    return OSDCMD_OK;
+}
 #endif
 
 int32_t registerosdcommands(void)
@@ -1717,6 +1728,7 @@ int32_t registerosdcommands(void)
     OSD_RegisterFunction("vidmode","vidmode <xdim> <ydim> <bpp> <fullscreen>: change the video mode",osdcmd_vidmode);
 #ifdef AP_DEBUG_ON
     OSD_RegisterFunction("ap_item","ap_item <id>: Gives AP Item", osdcmd_ap_item);
+    OSD_RegisterFunction("ap_unlock_all","ap_unlock_all: Gives access to all levels", osdcmd_ap_unlock_all);
 #endif
 #ifdef USE_OPENGL
     baselayer_osdcmd_vidmode_func = osdcmd_vidmode;

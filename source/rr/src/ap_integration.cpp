@@ -961,9 +961,10 @@ bool ap_can_run()
 
 void ap_remaining_items(uint16_t* collected, uint16_t* total)
 {
-    for (std::string sprite_str : ap_game_config["locations"][current_map()]["sprites"].getMemberNames())
+    std::string map = current_map();
+    for (std::string sprite_str : ap_game_config["locations"][map]["sprites"].getMemberNames())
     {
-        ap_location_t pickup_loc = safe_location_id(ap_game_config["locations"][current_map()]["sprites"][sprite_str]["id"]);
+        ap_location_t pickup_loc = safe_location_id(ap_game_config["locations"][map]["sprites"][sprite_str]["id"]);
         if (pickup_loc > 0 && AP_LOCATION_CHECK_MASK(pickup_loc, (AP_LOC_PICKUP | AP_LOC_USED)))
         {
             (*total)++;
