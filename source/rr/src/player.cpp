@@ -8264,6 +8264,8 @@ check_enemy_sprite:
             }
             for (bssize_t TRAVERSE_CONNECT(playerNum))
                 g_player[playerNum].ps->gm = MODE_EOL;
+            // [AP] reached a level exit, register it
+            ap_check_exit(0);
 
             if (RR && ud.level_number == 6 && ud.volume_number == 0)
                 g_turdLevel = 1;
