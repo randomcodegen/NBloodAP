@@ -25,6 +25,8 @@ std::map<ap_net_id_t, uint8_t> ap_used_level_unlocks;
 Json::Reader ap_reader;
 Json::FastWriter ap_writer;
 
+std::vector<std::string> ap_message_queue;
+
 
 static void init_location_table(Json::Value& locations)
 {
@@ -394,4 +396,54 @@ bool AP_CheckVictory(void)
 extern bool AP_IsLevelUsed(ap_net_id_t unlock_key)
 {
     return ap_used_level_unlocks.count(AP_NET_ID(unlock_key));
+}
+
+void AP_QueueMessage(std::string msg)
+{
+    AP_Printf(msg);
+    ap_message_queue.push_back(msg);
+}
+
+void AP_ProcessMessages()
+{
+    // Fetch remaining messages from the AP Server
+    while (AP_IsMessagePending())
+    {
+        AP_Message* message = AP_GetLatestMessage();
+
+        std::stringstream msgbuf;
+
+        if (message->messageParts.empty())
+        {
+            msgbuf << message->text;
+        }
+        else
+        {
+            for (auto &part : message->messageParts)
+            {
+                switch(part.type)
+                {
+                case AP_LocationText:
+                    msgbuf << "^8^S2";
+                    break;
+                case AP_ItemText:
+                    msgbuf << "^7^S0";
+                    break;
+                case AP_PlayerText:
+                    msgbuf << "^2^S4";
+                    break;
+                case AP_NormalText:
+                default:
+                    msgbuf << "^12^S0";
+                    break;
+                }
+
+                msgbuf << part.text;
+            }
+        }
+
+        ap_message_queue.push_back(msgbuf.str());
+
+        AP_ClearLatestMessage();
+    }
 }

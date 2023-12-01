@@ -2398,6 +2398,9 @@ static void Menu_Pre(MenuID_t cm)
         MenuEntry_DisableOnCondition(&ME_MAIN_QUITTOTITLE, g_netServer || numplayers > 1);
         fallthrough__;
     case MENU_MAIN:
+        // [AP] Disable save menus when it is disabled anyway
+        MenuEntry_DisableOnCondition(&ME_MAIN_LOADGAME, AP && !ap_can_save());
+        MenuEntry_DisableOnCondition(&ME_MAIN_SAVEGAME, AP && !ap_can_save());
         if ((g_netServer || ud.multimode > 1) && ud.recstat != 2)
         {
             ME_MAIN_NEWGAME.entry = &MEO_MAIN_NEWGAME_NETWORK;

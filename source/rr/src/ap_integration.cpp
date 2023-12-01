@@ -17,12 +17,10 @@
 
 uint8_t ap_return_to_menu = 0;
 
+std::string ap_message_str;
+
 // Convenience access to player struct
 #define ACTIVE_PLAYER g_player[myconnectindex].ps
-
-static std::string item_quote_tmp;
-
-#define AP_RECEIVE_ITEM_QUOTE 5120
 
 static inline ap_location_t safe_location_id(Json::Value& val)
 {
@@ -39,15 +37,10 @@ std::string ap_format_map_id(uint8_t level_number, uint8_t volume_number)
         // user map. Not sure we want to support this in general, but might as well do the right thing here
         return std::string(boardfilename);
     }
-    std::stringstream tmp;
-    tmp << "E" << volume_number + 1 << "L" << level_number + 1;
-    return tmp.str();
+    return "E" + std::to_string(volume_number + 1) + "L" + std::to_string(level_number + 1);
 }
 
-static std::string current_map(void)
-{
-    return ap_format_map_id(ud.level_number, ud.volume_number);
-}
+std::string current_map = "";
 
 static void ap_add_processor_sprite(void)
 {
@@ -83,7 +76,7 @@ static void ap_add_processor_sprite(void)
 */
 static void ap_map_patch_sprites(void)
 {
-    std::string map = current_map();
+    std::string map = current_map;
     Json::Value sprite_locations = ap_game_config["locations"][map]["sprites"];
     int32_t i;
     Json::Value sprite_info;
@@ -126,7 +119,7 @@ static void ap_map_patch_sprites(void)
 static void print_debug_level_info()
 {
     std::stringstream out;
-    out << "Secret sectors for " << current_map() << ":\n";
+    out << "Secret sectors for " << current_map << ":\n";
     int32_t i;
     for (i = 0; i < numsectors; i++)
     {
@@ -137,7 +130,7 @@ static void print_debug_level_info()
     AP_Debugf(out.str().c_str());
 
     out = std::stringstream();
-    out << "Trash cans for " << current_map() << ":\n";
+    out << "Trash cans for " << current_map << ":\n";
     for (i = 0; i < Numsprites; i++)
     {
         if (sprite[i].picnum == CANWITHSOMETHING__STATIC)
@@ -148,7 +141,7 @@ static void print_debug_level_info()
     AP_Debugf(out.str().c_str());
 
     out = std::stringstream();
-    out << "Missed Locations for " << current_map() << ":\n";
+    out << "Missed Locations for " << current_map << ":\n";
     for (i = 0; i < Numsprites; i++)
     {
         switch (sprite[i].picnum)
@@ -215,7 +208,7 @@ static void print_level_template(void)
             loc["name"] = std::to_string(i) +" ";
             loc["id"] = i;
             loc["type"] = "sprite";
-            if(sprite[i].pal == 0)
+            if(sprite[i].pal != 0 && sprite[i].picnum != ACCESSCARD__STATIC)
             {
                 loc["name"] = "MP " + loc["name"].asString();
                 loc["mp"] = Json::booleanValue;
@@ -331,12 +324,14 @@ static void print_level_template(void)
             out.append(loc);
     }
 
+    uint16_t secretcnt = 1;
     for (unsigned int i = 0; i < numsectors; i++)
     {
         if (sector[i].lotag == 32767)
         {
             Json::Value loc = Json::objectValue;
-            loc["name"] = "Secret";
+            loc["name"] = "Secret " + std::to_string(secretcnt);
+            secretcnt++;
             loc["id"] = i;
             loc["type"] = "sector";
             out.append(loc);
@@ -361,7 +356,7 @@ static void print_level_template(void)
 static void ap_mark_known_secret_sectors(bool from_save)
 {
     int32_t i;
-    Json::Value cur_secret_locations = ap_game_config["locations"][current_map()]["sectors"];
+    Json::Value cur_secret_locations = ap_game_config["locations"][current_map]["sectors"];
     Json::Value sector_info;
     for (i = 0; i < numsectors; i++)
     {
@@ -416,13 +411,6 @@ void ap_startup(void)
     G_AddGroup(customgrp);
     const char customcon[13] = "DUKE3DAP.CON";
     g_scriptNamePtr          = Xstrdup(customcon);
-
-    // This quote is managed dynamically by our code, so free the pre-allocated memory
-    if (apStrings[AP_RECEIVE_ITEM_QUOTE] != NULL)
-    {
-        Xfree(apStrings[AP_RECEIVE_ITEM_QUOTE]);
-        apStrings[AP_RECEIVE_ITEM_QUOTE] = NULL;
-    }
 }
 
 Json::Value read_json_from_grp(const char* filename)
@@ -585,6 +573,18 @@ void force_set_inventory_item(uint8_t invnum)
         P_SelectNextInvItem(ACTIVE_PLAYER);
 }
 
+static uint16_t get_inv_item_capacity(Json::Value &item_info)
+{
+    if (item_info["dynamic"].asBool())
+    {
+        // Use dynamic values from slot data if they exist
+        uint16_t slot_capacity = json_get_int(ap_game_settings["invinc"][item_info["invnum"].asString()], 0);
+        if (slot_capacity > 0)
+            return slot_capacity;
+    }
+    return json_get_int(item_info["capacity"], 0);
+}
+
 /* 
   Apply whatever item we just got to our current game state 
 
@@ -595,15 +595,6 @@ static void ap_get_item(ap_net_id_t item_id, bool silent)
 {
     Json::Value item_info = ap_item_info[item_id];
     bool notify = !(silent || item_info["silent"].asBool());
-    if (notify)
-    {
-        AP_Printf(("Got Item: " + item_info["name"].asString()).c_str());
-        // Ensure message gets displayed, even though it reuses the same quote id
-        item_quote_tmp = "Received " + item_info["name"].asString();
-        apStrings[AP_RECEIVE_ITEM_QUOTE] = (char *)item_quote_tmp.c_str();
-        ACTIVE_PLAYER->ftq = 0;
-        P_DoQuote(AP_RECEIVE_ITEM_QUOTE, ACTIVE_PLAYER);
-    }
 
     std::string item_type = item_info["type"].asString();
     // Poor man's switch
@@ -691,11 +682,11 @@ static void ap_get_item(ap_net_id_t item_id, bool silent)
 
         // If the item is not unlocked yet, just add it to the min capacity
         if (!inv_available[invnum])
-            inv_capacity[invnum] += json_get_int(item_info["capacity"], 0);
+            inv_capacity[invnum] += get_inv_item_capacity(item_info);
         else
         {
             // Inventory item unlocked, just increase capacity
-            ACTIVE_PLAYER->inv_amount[invnum] += json_get_int(item_info["capacity"], 0);
+            ACTIVE_PLAYER->inv_amount[invnum] += get_inv_item_capacity(item_info);
             // Saturate
             int64_t max_capacity = json_get_int(item_info["max_capacity"], -1);
             if (max_capacity >= 0 && ACTIVE_PLAYER->inv_amount[invnum] > max_capacity)
@@ -727,6 +718,24 @@ static void ap_get_item(ap_net_id_t item_id, bool silent)
     }
 }
 
+void process_message_queue()
+{
+    // Handle messages from the AP Server
+    AP_ProcessMessages();
+
+    // ToDo use a better dedicated system, this is at least easy to force into the engine/layout right now
+    // Override all quotes that are not AP related
+    if ((ACTIVE_PLAYER->ftq != AP_MESSAGE_QUOTE) && ap_message_queue.size() > 0)
+    {
+        // Pop oldest message
+        ap_message_str = ap_message_queue[0];
+        ap_message_queue.erase(ap_message_queue.begin());
+        // And trigger a new quote
+        ACTIVE_PLAYER->ftq = 0;
+        P_DoQuote(AP_MESSAGE_QUOTE, ACTIVE_PLAYER);
+    }
+}
+
 // Called from an actor in game, ensures we are in a valid game state and an in game tic has expired since last call
 void ap_process_game_tic(void)
 {
@@ -737,6 +746,9 @@ void ap_process_game_tic(void)
         ap_game_state.ap_item_queue.erase(ap_game_state.ap_item_queue.begin());
         ap_get_item(item_id, false);
     }
+
+    // Process outstanding messages to quote at the player
+    process_message_queue();
 }
 
 // This is called from the main game loop to ensure these checks happen globally
@@ -782,10 +794,10 @@ static void ap_set_default_inv(void)
     // ToDo use dynamic settings from AP seed
     // Always have mighty foot and pistol
     ACTIVE_PLAYER->gotweapon = 3;
-    // Always have pistol ammo
-    ACTIVE_PLAYER->ammo_amount[PISTOL_WEAPON__STATIC] = 48;
+    // Always have pistol ammo, and a bit more since we might have no other weapons
+    ACTIVE_PLAYER->ammo_amount[PISTOL_WEAPON__STATIC] = 96;
     // Set default max ammo amounts
-    ACTIVE_PLAYER->max_ammo_amount[PISTOL_WEAPON__STATIC] = 60;
+    ACTIVE_PLAYER->max_ammo_amount[PISTOL_WEAPON__STATIC] = 120;
     ACTIVE_PLAYER->max_ammo_amount[SHOTGUN_WEAPON__STATIC] = 20;
     ACTIVE_PLAYER->max_ammo_amount[CHAINGUN_WEAPON__STATIC] = 100;
     ACTIVE_PLAYER->max_ammo_amount[RPG_WEAPON__STATIC] = 5;
@@ -897,6 +909,8 @@ void ap_sync_inventory()
 
 void ap_on_map_load(void)
 {
+    current_map = ap_format_map_id(ud.level_number, ud.volume_number);
+
 #ifdef AP_DEBUG_ON
     print_level_template();
 #endif
@@ -912,13 +926,15 @@ void ap_on_map_load(void)
 
 void ap_on_save_load(void)
 {
+    current_map = ap_format_map_id(ud.level_number, ud.volume_number);
+
     ap_mark_known_secret_sectors(true);
     ap_sync_inventory();
 }
 
 void ap_check_secret(int16_t sectornum)
 {
-    AP_CheckLocation(safe_location_id(ap_game_config["locations"][current_map()]["sectors"][std::to_string(sectornum)]["id"]));
+    AP_CheckLocation(safe_location_id(ap_game_config["locations"][current_map]["sectors"][std::to_string(sectornum)]["id"]));
 }
 
 void ap_level_end(void)
@@ -933,10 +949,10 @@ void ap_level_end(void)
 
 void ap_check_exit(int16_t exitnum)
 {
-    ap_location_t exit_location = safe_location_id(ap_game_config["locations"][current_map()]["exits"][std::to_string(exitnum)]["id"]);
+    ap_location_t exit_location = safe_location_id(ap_game_config["locations"][current_map]["exits"][std::to_string(exitnum)]["id"]);
     // Might not have a secret exit defined, so in this case treat as regular exit
     if (exit_location < 0)
-        exit_location = safe_location_id(ap_game_config["locations"][current_map()]["exits"][std::to_string(0)]["id"]);
+        exit_location = safe_location_id(ap_game_config["locations"][current_map]["exits"][std::to_string(0)]["id"]);
     AP_CheckLocation(exit_location);
 }
 
@@ -953,8 +969,6 @@ void ap_select_level(uint8_t i)
 void ap_shutdown(void)
 {
     AP_LibShutdown();
-    // Fix our dynamically managed quote. The underlying c_str is managed by the string variable
-    apStrings[AP_RECEIVE_ITEM_QUOTE] = NULL;
 }
 
 bool ap_can_dive()
@@ -977,12 +991,16 @@ bool ap_can_run()
     return ability_unlocks.count("run");
 }
 
+bool ap_can_save()
+{
+    return (!AP || !ap_game_settings["no_save"].asBool());
+}
+
 void ap_remaining_items(uint16_t* collected, uint16_t* total)
 {
-    std::string map = current_map();
-    for (std::string sprite_str : ap_game_config["locations"][map]["sprites"].getMemberNames())
+    for (std::string sprite_str : ap_game_config["locations"][current_map]["sprites"].getMemberNames())
     {
-        ap_location_t pickup_loc = safe_location_id(ap_game_config["locations"][map]["sprites"][sprite_str]["id"]);
+        ap_location_t pickup_loc = safe_location_id(ap_game_config["locations"][current_map]["sprites"][sprite_str]["id"]);
         if (pickup_loc > 0 && AP_LOCATION_CHECK_MASK(pickup_loc, (AP_LOC_PICKUP | AP_LOC_USED)))
         {
             (*total)++;

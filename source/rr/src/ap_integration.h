@@ -3,6 +3,8 @@
 #include "ap_lib.h"
 #include "duke3d.h"
 
+#define AP_MESSAGE_QUOTE 5120
+
 extern void ap_on_map_load(void);
 extern void ap_on_save_load(void);
 extern void ap_sync_inventory();
@@ -25,6 +27,7 @@ extern bool ap_can_dive();
 extern bool ap_can_jump();
 extern bool ap_can_run();
 extern bool ap_can_crouch();
+extern bool ap_can_save();
 
 extern std::string ap_episode_names[MAXVOLUMES];
 extern std::vector<uint8_t> ap_active_episodes;
@@ -33,3 +36,4 @@ extern std::map<std::string, Json::Value> ap_level_data;
 
 extern uint8_t ap_return_to_menu;
 extern ap_connection_settings_t ap_connection_settings;
+extern std::string ap_message_str;

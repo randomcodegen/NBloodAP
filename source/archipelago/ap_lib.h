@@ -123,6 +123,11 @@ extern void AP_ItemReceived(int64_t item_id, int slot, bool notify);
 extern bool AP_CheckVictory(void);  //Check if goals have been fulfilled for the first time
 extern bool AP_IsLevelUsed(ap_net_id_t unlock_key);
 
+// Message queue
+extern std::vector<std::string> ap_message_queue;
+extern void AP_QueueMessage(std::string msg);
+extern void AP_ProcessMessages();
+
 #ifdef __cplusplus
 }
 #endif

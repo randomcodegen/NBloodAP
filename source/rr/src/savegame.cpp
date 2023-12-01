@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "prlights.h"
 #include "savegame.h"
 #include "ap_integration.h"
+#include "Archipelago.h"
 
 static OutputFileCounter savecounter;
 
@@ -329,6 +330,9 @@ static int different_user_map;
 // XXX: keyboard input 'blocked' after load fail? (at least ESC?)
 int32_t G_LoadPlayer(savebrief_t & sv)
 {
+    // [AP] Check if saving is allowed
+    if (!ap_can_save()) return -1;
+
     int const fil = kopen4loadfrommod(sv.path, 0);
 
     if (fil == -1)
@@ -517,6 +521,10 @@ int32_t G_SavePlayer(savebrief_t & sv, bool isAutoSave)
 #ifdef __ANDROID__
     G_SavePalette();
 #endif
+
+    // [AP] Check if saving is allowed at all
+    if (!ap_can_save())
+        return -1;
 
     G_SaveTimers();
 
@@ -1480,6 +1488,12 @@ int32_t sv_saveandmakesnapshot(FILE *fil, char const *name, int8_t spot, int8_t 
     h.levnum     = ud.level_number;
     h.skill      = ud.player_skill;
 
+    // [AP] Store seed name in header for identification
+    if (AP)
+        Bstrncpy(h.ap_seed, AP_GetPrivateServerDataPrefix().c_str(), 128);
+    else
+        Bmemset(h.ap_seed, 0, 128);
+
     const uint32_t BSZ = sizeof(h.boardfn);
     EDUKE32_STATIC_ASSERT(BSZ == sizeof(currentboardfilename));
     Bstrncpy(h.boardfn, currentboardfilename, BSZ);
@@ -1597,6 +1611,13 @@ int32_t sv_loadheader(int32_t fil, int32_t spot, savehead_t *h)
             Bmemset(h->headerstr, 0, sizeof(h->headerstr));
             return -3;
         }
+    }
+
+    // [AP] Check if save matches loaded AP Seed
+    if (Bstrncmp(h->ap_seed, AP ? AP_GetPrivateServerDataPrefix().c_str() : "", 128) != 0)
+    {
+        OSD_Printf("Savegame is for a different AP Seed.");
+        return -2;
     }
 
     if (h->getPtrSize() != sizeof(intptr_t))

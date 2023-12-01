@@ -6718,6 +6718,10 @@ void G_HandleLocalKeys(void)
                 KB_ClearKeyDown(sc_F2);
 
 FAKE_F2:
+                // [AP] Check if saving is allowed at all
+                if (!ap_can_save())
+                    return;
+                
                 if (sprite[g_player[myconnectindex].ps->i].extra <= 0)
                 {
                     P_DoQuote(QUOTE_SAVE_DEAD,g_player[myconnectindex].ps);
@@ -6742,6 +6746,10 @@ FAKE_F2:
                 KB_ClearKeyDown(sc_F3);
 
 FAKE_F3:
+                // [AP] Check if saving is allowed at all
+                if (!ap_can_save())
+                    return;
+                
                 Menu_Change(MENU_LOAD);
                 S_PauseSounds(true);
                 Menu_Open(myconnectindex);
@@ -6792,6 +6800,10 @@ FAKE_F3:
             CONTROL_ClearButton(gamefunc_Quick_Save);
 
             g_doQuickSave = 0;
+
+            // [AP] Check if saving is allowed at all
+            if (!ap_can_save())
+                return;
 
             if (!g_lastusersave.isValid())
                 goto FAKE_F2;
@@ -6854,6 +6866,10 @@ FAKE_F3:
             CONTROL_ClearButton(gamefunc_Quick_Load);
 
             g_doQuickSave = 0;
+
+            // [AP] Check if saving is allowed at all
+            if (!ap_can_save())
+                return;
 
             if (g_quickload == nullptr || !g_quickload->isValid())
                 goto FAKE_F3;
@@ -8866,7 +8882,8 @@ MAIN_LOOP_RESTART:
         }
 
         // handle CON_SAVE and CON_SAVENN
-        if (g_saveRequested)
+        // [AP] Check if saving is allowed at all
+        if (g_saveRequested && ap_can_save())
         {
             KB_FlushKeyboardQueue();
             videoNextPage();
@@ -8879,9 +8896,8 @@ MAIN_LOOP_RESTART:
             g_quickload = &g_lastautosave;
 
             OSD_Printf("Saved: %s\n", g_lastautosave.path);
-
-            g_saveRequested = false;
         }
+        g_saveRequested = false;
 
         if (g_player[myconnectindex].ps->gm&MODE_DEMO)
             goto MAIN_LOOP_RESTART;

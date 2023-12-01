@@ -30,7 +30,8 @@ extern "C" {
 #endif
 
 # define SV_MAJOR_VER 1
-#define SV_MINOR_VER 7
+// [AP] Have AP Seed header now
+#define SV_MINOR_VER 8
 
 #pragma pack(push,1)
 typedef struct _savehead
@@ -57,6 +58,7 @@ typedef struct _savehead
 #ifdef __ANDROID__
     char skillname[32], volname[32];
 #endif
+    char ap_seed[128];
 
     uint8_t getPtrSize() const { return ptrsize & 0x7Fu; }
     bool isAutoSave() const { return !!(ptrsize & (1u<<7u)); }

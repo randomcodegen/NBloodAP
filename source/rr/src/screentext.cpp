@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "compat.h"
 #include "sbar.h"
 #include "menus.h"
+#include "ap_integration.h"
 
 // get the string length until the next '\n'
 int32_t G_GetStringLineLength(const char *text, const char *end, const int32_t iter)
@@ -204,6 +205,13 @@ vec2_t G_ScreenTextSize(const int32_t font,
         if (t == '^' && Bisdigit(*(text+iter)) && !(f & TEXT_LITERALESCAPE))
         {
             text += iter + iter;
+            if (Bisdigit(*text))
+                text += iter;
+            continue;
+        }
+        if (t == '^' && *(text+iter) == 'S' && Bisdigit(*(text+iter+iter)) && !(f & TEXT_LITERALESCAPE))
+        {
+            text += iter + iter + iter;
             if (Bisdigit(*text))
                 text += iter;
             continue;
@@ -460,7 +468,7 @@ void G_AddCoordsFromRotation(vec2_t *coords, const vec2_t *unitDirection, const 
 // screentext
 vec2_t G_ScreenText(const int32_t font,
     int32_t x, int32_t y, const int32_t z, const int32_t blockangle, const int32_t charangle,
-    const char *str, const int32_t shade, int32_t pal, int32_t o, int32_t alpha,
+    const char *str, int32_t shade, int32_t pal, int32_t o, int32_t alpha,
     int32_t xspace, int32_t yline, int32_t xbetween, int32_t ybetween, const int32_t f,
     const int32_t x1, const int32_t y1, const int32_t x2, const int32_t y2)
 {
@@ -597,6 +605,29 @@ vec2_t G_ScreenText(const int32_t font,
 
             if (!(f & TEXT_IGNOREESCAPE))
                 pal = Batoi(smallbuf);
+
+            continue;
+        }
+
+        if (t == '^' && *(text+iter) == 'S' && Bisdigit(*(text+iter+iter)) && !(f & TEXT_LITERALESCAPE))
+        {
+            char smallbuf[3];
+
+            text += iter + iter;
+            smallbuf[0] = *text;
+
+            text += iter;
+            if (Bisdigit(*text))
+            {
+                smallbuf[1] = *text;
+                smallbuf[2] = '\0';
+                text += iter;
+            }
+            else
+                smallbuf[1] = '\0';
+
+            if (!(f & TEXT_IGNOREESCAPE))
+                shade = Batoi(smallbuf);
 
             continue;
         }
@@ -1121,7 +1152,8 @@ void G_PrintGameQuotes(int32_t snum)
 #endif
         if (REALITY)
             RT_RotateSpriteSetColor(64, 200, 200, 256 - texta(k));
-        height = gametext_(x, y, apStrings[ps->ftq], textsh(k), pal, texto(k), texta(k), TEXT_XCENTER | (REALITY ? TEXT_N64NOPAL : 0)).y + (1<<16);
+        // [AP] Have one dynamic quote from a std::string buffer
+        height = gametext_(x, y, (ps->ftq == AP_MESSAGE_QUOTE) ? ap_message_str.c_str() : apStrings[ps->ftq], textsh(k), pal, texto(k), texta(k), TEXT_XCENTER | (REALITY ? TEXT_N64NOPAL : 0)).y + (1<<16);
     }
     while (0);
 
@@ -1171,10 +1203,14 @@ void P_DoQuote(int32_t q, DukePlayer_t *p)
         return;
     }
 
+    // [AP] Don't interrupt ongoing messages with game quotes
+    if (p->fta > 0 && p->ftq == AP_MESSAGE_QUOTE) return;
+
     if (p->fta > 0 && q != QUOTE_RESERVED && q != QUOTE_RESERVED2)
         if (p->ftq == QUOTE_RESERVED || p->ftq == QUOTE_RESERVED2) return;
 
-    p->fta = 100;
+    // [AP] Show AP text for shorter periods so we can actually get through the queue at busy times
+    p->fta = (p->ftq == AP_MESSAGE_QUOTE) ? 60 : 100;
 
     if (p->ftq != q)
     {
