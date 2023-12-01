@@ -40,6 +40,18 @@ int AP_Printf(const char *f, ...)
     return Bstrlen(f);
 }
 
+int AP_Printf(std::string f, ...)
+{
+    va_list va;
+    va_start(va, f);
+    char *buf = format_prefixed_str(f.c_str(), AP_OSDTEXT_NORMAL, va);
+    va_end(va);
+
+    OSD_Puts(buf);
+
+    return Bstrlen(f.c_str());
+}
+
 extern int AP_Debugf(const char *f, ...)
 {
 #ifdef AP_DEBUG_ON
@@ -56,6 +68,22 @@ extern int AP_Debugf(const char *f, ...)
 #endif
 }
 
+extern int AP_Debugf(std::string f, ...)
+{
+#ifdef AP_DEBUG_ON
+    va_list va;
+    va_start(va, f);
+    char *buf = format_prefixed_str(f.c_str(), AP_OSDTEXT_DEBUG, va);
+    va_end(va);
+
+    OSD_Puts(buf);
+
+    return Bstrlen(f.c_str());
+#else
+    return 0;
+#endif
+}
+
 extern int AP_Errorf(const char *f, ...)
 
 {
@@ -67,4 +95,17 @@ extern int AP_Errorf(const char *f, ...)
     OSD_Puts(buf);
 
     return Bstrlen(f);
+}
+
+extern int AP_Errorf(std::string f, ...)
+
+{
+    va_list va;
+    va_start(va, f);
+    char *buf = format_prefixed_str(f.c_str(), AP_OSDTEXT_ERROR, va);
+    va_end(va);
+
+    OSD_Puts(buf);
+
+    return Bstrlen(f.c_str());
 }

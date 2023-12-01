@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "savegame.h"
 #include "sbar.h"
 #include "ap_integration.h"
+#include "Archipelago.h"
 
 #ifdef LUNATIC
 # include "lunatic_game.h"
@@ -1469,6 +1470,52 @@ static int osdcmd_ap_unlock_all(osdcmdptr_t parm)
 }
 #endif
 
+static int osdcmd_ap_missing(osdcmdptr_t parm)
+{
+    if (!g_player[myconnectindex].ps->gm & MODE_GAME)
+    {
+        AP_Errorf("Not in a level right now.\n");
+        return OSDCMD_OK;
+    }
+
+    std::string map = ap_format_map_id(ud.level_number, ud.volume_number);
+    AP_Printf("Missing locations for " + map + ":");
+    for (unsigned int i = 0; i < Numsprites; i++)
+    {
+        // Filter to AP items
+        if (!(sprite[i].picnum == AP_ITEM__STATIC || sprite[i].picnum == AP_PROG__STATIC)) continue;
+        ap_location_t loc = sprite[i].lotag;
+        // Skip checked locations, because sprite might not have been overwritten since deletion
+        if (AP_LOCATION_CHECKED(loc)) continue;
+        AP_Printf(AP_GetLocationName(AP_NET_ID(loc)));
+#ifdef AP_DEBUG_ON
+        AP_Debugf("   at X:  " + std::to_string(sprite[i].x) + "  Y:  " + std::to_string(sprite[i].y) + "  Z:  " + std::to_string(sprite[i].z));
+#endif
+    }
+
+    Json::Value cur_secret_locations = ap_game_config["locations"][map]["sectors"];
+    Json::Value sector_info;
+    for (unsigned int i = 0; i < numsectors; i++)
+    {
+        if (sector[i].lotag == 32767)
+        {
+            // Secret sector, check if it is a valid location for the AP seed and has been collected already
+            sector_info = cur_secret_locations[std::to_string(i)];
+            ap_location_t loc = sector_info["id"].isInt() ? sector_info["id"].asInt() : -1;
+            if (loc < 0)
+                continue;
+            if (!AP_LOCATION_CHECKED(loc))
+            {
+                AP_Printf(AP_GetLocationName(AP_NET_ID(loc)));
+            }
+        }
+    }
+
+    // ToDo exits, we don't track these nicely anywhere yet
+
+    return OSDCMD_OK;
+}
+
 int32_t registerosdcommands(void)
 {
     FX_InitCvars();
@@ -1730,6 +1777,7 @@ int32_t registerosdcommands(void)
     OSD_RegisterFunction("ap_item","ap_item <id>: Gives AP Item", osdcmd_ap_item);
     OSD_RegisterFunction("ap_unlock_all","ap_unlock_all: Gives access to all levels", osdcmd_ap_unlock_all);
 #endif
+    OSD_RegisterFunction("ap_missing","ap_missing: Lists missing checks in current level", osdcmd_ap_missing);
 #ifdef USE_OPENGL
     baselayer_osdcmd_vidmode_func = osdcmd_vidmode;
 #endif
