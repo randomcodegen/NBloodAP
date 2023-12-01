@@ -1210,7 +1210,10 @@ void P_DoQuote(int32_t q, DukePlayer_t *p)
         if (p->ftq == QUOTE_RESERVED || p->ftq == QUOTE_RESERVED2) return;
 
     // [AP] Show AP text for shorter periods so we can actually get through the queue at busy times
-    p->fta = (p->ftq == AP_MESSAGE_QUOTE) ? 60 : 100;
+    uint16_t queue_length = ap_message_queue.size();
+    if (queue_length > 10) queue_length = 10;  // Clamp so we get at least 10 tics of each message
+    uint16_t display_length = queue_length > 0 ? 100 / queue_length : 100;
+    p->fta = display_length;
 
     if (p->ftq != q)
     {

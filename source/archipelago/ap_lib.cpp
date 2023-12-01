@@ -261,14 +261,14 @@ bool sync_wait_for_data(uint32_t timeout)
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         if (std::chrono::steady_clock::now() - start_time > std::chrono::milliseconds(timeout))
         {
-            printf("AP: Failed to connect\n");
+            AP_Errorf("Timed out connecting to server.");
             return TRUE;
         }
     }
 
     // Should have the id checksum from slot data by now, verify it matches our loaded ap_config.json
     if (strcmp(ap_game_config["checksum"].asCString(), remote_id_checksum.c_str())) {
-        printf("AP: Remote server item/location IDs don't match locally loaded configuration.\n");
+        AP_Errorf("Remote server item/location IDs don't match locally loaded configuration.");
         return TRUE;
     }
 
@@ -302,7 +302,11 @@ void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection)
 {
     if (game_config == NULL || connection.mode == AP_DISABLED) return;
     ap_game_id = game_config["game_id"].asUInt() & AP_GAME_ID_MASK;
-    if (ap_game_id == 0) return;
+    if (ap_game_id == 0)
+    {
+        AP_Errorf("Game ID in ap_config.json set to 0. Has to be between 1 and 15");
+        return;
+    }
 
     init_location_table(game_config["locations"]);
     init_item_table(game_config["items"]);
@@ -329,7 +333,6 @@ void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection)
     {
         AP_Shutdown();
         // ToDo Just abort entirely?
-        AP_Errorf("Could not establish connection to Server in time.");
         return;
     }
 

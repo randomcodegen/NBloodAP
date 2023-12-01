@@ -393,6 +393,7 @@ void ap_startup(void)
     {
         ap_connection_settings.mode = AP_LOCAL;
         ap_connection_settings.sp_world = ud.setup.ap_local;
+        AP_Printf("Running local game from " + std::string(ud.setup.ap_local));
     }
     else if (Bstrlen(ud.setup.ap_user) > 0)
     {
@@ -400,8 +401,13 @@ void ap_startup(void)
         ap_connection_settings.player = ud.setup.ap_user;
         ap_connection_settings.ip = ud.setup.ap_server;
         ap_connection_settings.password = ud.setup.ap_pass;
+        AP_Printf("Connecting to AP Server " + std::string(ud.setup.ap_server) + " as " + std::string(ud.setup.ap_user));
     }
-    if (ap_connection_settings.mode == AP_DISABLED) return;
+    if (ap_connection_settings.mode == AP_DISABLED)
+    {
+        AP_Printf("No AP connection settings defined; Launching vanilla game.");
+        return;
+    }
 
     // [AP] Always load our patch groups and set the main con file
     // ToDo find a better way to do this with dependency chaining?

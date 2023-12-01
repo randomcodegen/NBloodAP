@@ -356,6 +356,8 @@ int32_t G_LoadPlayer(savebrief_t & sv)
 
         return 1;
     }
+    // [AP] Committed to loading a save file, store player data now
+    ap_store_dynamic_player_data();
 
     // some setup first
     ud.multimode = h.numplayers;
