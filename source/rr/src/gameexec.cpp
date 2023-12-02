@@ -1284,6 +1284,8 @@ static int32_t VM_ResetPlayer(int const playerNum, int32_t vmFlags)
     //AddLog("resetplayer");
     if (!g_netServer && ud.multimode < 2)
     {
+        // [AP] Store player state, about to load/reset a map
+        ap_store_dynamic_player_data();
         if (g_quickload && g_quickload->isValid() && ud.recstat != 2)
         {
             Menu_Open(playerNum);

@@ -822,8 +822,13 @@ void ap_load_dynamic_player_data()
     Json::Value player_data = ap_game_state.dynamic_player["player"];
 
     int health = json_get_int(player_data["health"], -1);
+    // Player died, reset to max HP
     if(health <= 0 || health > ACTIVE_PLAYER->max_player_health) health = ACTIVE_PLAYER->max_player_health;
+    // Give at least some minimum halth to the player on entering a level
+    if (health < 30) health = 30;
+
     sprite[ACTIVE_PLAYER->i].extra = health;
+    ACTIVE_PLAYER->last_extra = health;
 
     // Upgrade inventory capacity if we had more left over
     for (uint8_t i = 0; i < GET_MAX; i++)
@@ -858,6 +863,7 @@ void ap_store_dynamic_player_data(void)
     if (!(ACTIVE_PLAYER->gm & (MODE_EOL | MODE_GAME))) return;
 
     new_player_data["health"] = Json::Int(sprite[ACTIVE_PLAYER->i].extra);
+    bool player_died = sprite[ACTIVE_PLAYER->i].extra <= 0 ? true : false;
     for (uint8_t i = 0; i < GET_MAX; i++)
     {
         // Only store non progressive inventory values
@@ -868,7 +874,7 @@ void ap_store_dynamic_player_data(void)
         case GET_HEATS:
         case GET_FIRSTAID:
         case GET_BOOTS:
-            new_player_data["inv"][i] = Json::Int(ACTIVE_PLAYER->inv_amount[i]);
+            new_player_data["inv"][i] = Json::Int(player_died ? 0 : ACTIVE_PLAYER->inv_amount[i]);
             break;
         }
     }
@@ -876,7 +882,7 @@ void ap_store_dynamic_player_data(void)
     // Upgrade ammo count if we had more left over
     for (uint8_t i = 0; i < MAX_WEAPONS; i++)
     {
-        new_player_data["ammo"][i] = Json::Int(ACTIVE_PLAYER->ammo_amount[i]);
+        new_player_data["ammo"][i] = Json::Int(player_died ? 0 : ACTIVE_PLAYER->ammo_amount[i]);
     }
 
     new_player_data["curr_weapon"] = Json::Int(ACTIVE_PLAYER->curr_weapon);
