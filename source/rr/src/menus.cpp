@@ -8641,7 +8641,7 @@ void ap_init_menu(void)
             Menus[i].parentID = MENU_AP_LEVEL;
     }
     // Update episode list to known episodes
-    for (uint8_t i : ap_active_episodes) {
+    for (unsigned int i=0; i < ap_active_episodes.size(); i++) {
         ME_EPISODE[i].name = ap_episode_names[ap_active_episodes[i]].c_str();
     }
     // This might leak some memory, but it happens once so I don't care

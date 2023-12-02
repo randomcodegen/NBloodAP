@@ -488,6 +488,7 @@ void ap_initialize(void)
 {
     if (ap_connection_settings.mode == AP_DISABLED) return;
     Json::Value game_ap_config = read_json_from_grp("ap_config.json");
+    if (game_ap_config.isNull()) return;
 
     ap_connection_settings.game = game_ap_config["game"].asCString();
     AP_Initialize(game_ap_config, ap_connection_settings);
