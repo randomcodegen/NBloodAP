@@ -8642,7 +8642,7 @@ void ap_init_menu(void)
     }
     // Update episode list to known episodes
     for (uint8_t i : ap_active_episodes) {
-        ME_EPISODE[i].name = ap_episode_names[i].c_str();
+        ME_EPISODE[i].name = ap_episode_names[ap_active_episodes[i]].c_str();
     }
     // This might leak some memory, but it happens once so I don't care
     for (size_t i = ap_active_episodes.size(); i < MAXVOLUMES; i++) {
@@ -8654,6 +8654,13 @@ void ap_init_menu(void)
     ME_MAIN_NEWGAME.name = s_AP_SelectEpisode;
     ME_MAIN_NEWGAME_INGAME.name = s_AP_SelectEpisode;
     MEO_MAIN_NEWGAME_INGAME.linkID = MENU_EPISODE;
+
+    // If we only have one episode, skip the episode selection screen
+    if (ap_active_episodes.size() < 2)
+    {
+        MEO_MAIN_NEWGAME.linkID = MENU_AP_LEVEL;
+        MEO_MAIN_NEWGAME_INGAME.linkID = MENU_AP_LEVEL;
+    }
 }
 
 void ap_menu_prepare_level_list()

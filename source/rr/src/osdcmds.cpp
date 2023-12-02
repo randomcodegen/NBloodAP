@@ -1472,7 +1472,7 @@ static int osdcmd_ap_unlock_all(osdcmdptr_t parm)
 
 static int osdcmd_ap_missing(osdcmdptr_t parm)
 {
-    if (!g_player[myconnectindex].ps->gm & MODE_GAME)
+    if (!(g_player[myconnectindex].ps->gm & MODE_GAME))
     {
         AP_Errorf("Not in a level right now.\n");
         return OSDCMD_OK;
@@ -1493,7 +1493,7 @@ static int osdcmd_ap_missing(osdcmdptr_t parm)
 #endif
     }
 
-    Json::Value cur_secret_locations = ap_game_config["locations"][map]["sectors"];
+    Json::Value& cur_secret_locations = ap_game_config["locations"][map]["sectors"];
     Json::Value sector_info;
     for (unsigned int i = 0; i < numsectors; i++)
     {
@@ -1511,7 +1511,17 @@ static int osdcmd_ap_missing(osdcmdptr_t parm)
         }
     }
 
-    // ToDo exits, we don't track these nicely anywhere yet
+    Json::Value& cur_exit_locations = ap_game_config["locations"][map]["exits"];
+    for (std::string exit_id : cur_exit_locations.getMemberNames())
+    {
+        ap_location_t loc = cur_exit_locations[exit_id]["id"].isInt() ? cur_exit_locations[exit_id]["id"].asInt() : -1;
+        if (loc < 0)
+            continue;
+        if (!AP_LOCATION_CHECKED(loc))
+        {
+            AP_Printf(AP_GetLocationName(AP_NET_ID(loc)));
+        }
+    }
 
     return OSDCMD_OK;
 }

@@ -214,7 +214,8 @@ static void ReadSaveGameHeaders_Internal(void)
     for (int x = g_numinternalsaves-1; x >= 0; --x)
     {
         menusave_t & msv = g_internalsaves[x];
-        if (!msv.isUnreadable)
+        // [AP] Don't show saves for other seeds
+        if (!msv.isUnreadable && !msv.isOldVer)
         {
             ++g_nummenusaves;
         }
@@ -229,7 +230,7 @@ static void ReadSaveGameHeaders_Internal(void)
     for (int x = g_numinternalsaves-1, y = 0; x >= 0; --x)
     {
         menusave_t & msv = g_internalsaves[x];
-        if (!msv.isUnreadable)
+        if (!msv.isUnreadable && !msv.isOldVer)
         {
             g_menusaves[y++] = msv;
         }
