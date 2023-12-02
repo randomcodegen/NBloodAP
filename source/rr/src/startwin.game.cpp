@@ -240,6 +240,8 @@ static void PopulateForm(int32_t pgs)
 
         for (auto fg = foundgrps; fg; fg=fg->next)
         {
+            // [AP] Only list AP randomizer grps here
+            if (!(fg->type->game & GAMEFLAG_AP)) continue;
             Bsprintf(buf, "%s\t%s", fg->type->name, fg->filename);
             int const j = ListBox_AddString(hwnd, buf);
             (void)ListBox_SetItemData(hwnd, j, (LPARAM)fg);

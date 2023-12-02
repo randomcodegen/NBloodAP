@@ -37,14 +37,13 @@ static void process_vacapp15(int32_t crcval);
 // custom GRP support for the startup window, file format reflects the structure below
 #define GAMELISTFILE "games.list"
 //    name                                     crc          size      flags                         dependency  scriptname     postprocessing
-// [AP]: Only allow supported GRPs for Archipelago to be loaded
 static internalgrpinfo_t const internalgrpfiles[] =
 {
     //{ "Duke Nukem 3D",                         DUKE13_CRC,  26524524, GAMEFLAG_DUKE,                         0, NULL, NULL},
     //{ "Duke Nukem 3D (South Korean Censored)", DUKEKR_CRC,  26385383, GAMEFLAG_DUKE,                         0, NULL, NULL},
     { "Duke Nukem 3D: Atomic Edition",         DUKE15_CRC,  44356548, GAMEFLAG_DUKE,                         0, NULL, NULL},
-    //{ "Duke Nukem 3D: Atomic Edition (WT)",    DUKEWT_CRC,  44356548, GAMEFLAG_DUKE,                         0, NULL, NULL},
-    //{ "Duke Nukem 3D: Plutonium Pak",          DUKEPP_CRC,  44348015, GAMEFLAG_DUKE,                         0, NULL, NULL},
+    { "Duke Nukem 3D: Atomic Edition (WT)",    DUKEWT_CRC,  44356548, GAMEFLAG_DUKE,                         0, NULL, NULL},
+    { "Duke Nukem 3D: Plutonium Pak",          DUKEPP_CRC,  44348015, GAMEFLAG_DUKE,                         0, NULL, NULL},
     //{ "Duke Nukem 3D Shareware 0.99",          DUKE099_CRC, 9690241,  GAMEFLAG_DUKE|GAMEFLAG_DUKEBETA,       0, NULL, NULL},
     //{ "Duke Nukem 3D Shareware 1.0",           DUKE10_CRC,  10429258, GAMEFLAG_DUKE|GAMEFLAG_SHAREWARE,      0, NULL, NULL},
     //{ "Duke Nukem 3D Shareware 1.1",           DUKE11_CRC,  10442980, GAMEFLAG_DUKE|GAMEFLAG_SHAREWARE,      0, NULL, NULL},
@@ -52,27 +51,27 @@ static internalgrpinfo_t const internalgrpfiles[] =
     //{ "Duke Nukem 3D Mac Demo",                DUKEMD_CRC,  10444391, GAMEFLAG_DUKE|GAMEFLAG_SHAREWARE,      0, NULL, NULL},
     //{ "Duke Nukem 3D MacUser Demo",            DUKEMD2_CRC, 10628573, GAMEFLAG_DUKE|GAMEFLAG_SHAREWARE,      0, NULL, NULL },
     //{ "Duke it out in D.C. (1.3D)",            DUKEDC13_CRC, 7926624, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE13_CRC, NULL, NULL},
-    //{ "Duke it out in D.C.",                   DUKEDCPP_CRC, 8225517, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, NULL, NULL},
-    //{ "Duke it out in D.C.",                   DUKEDC_CRC,  8410183,  GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, NULL, NULL},
-    //{ "Duke it out in D.C.",                   (int32_t) 0x39A692BF,  8410187, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "DUKEDC.CON", NULL},
-    //{ "Duke it out in D.C.",                   (int32_t) 0xC63B6A8B,  8410149, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "DUKEDC.CON", NULL},
+    { "Duke it out in D.C.",                   DUKEDCPP_CRC, 8225517, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, NULL, NULL},
+    { "Duke it out in D.C.",                   DUKEDC_CRC,  8410183,  GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, NULL, NULL},
+    { "Duke it out in D.C.",                   (int32_t) 0x39A692BF,  8410187, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "DUKEDC.CON", NULL},
+    { "Duke it out in D.C.",                   (int32_t) 0xC63B6A8B,  8410149, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "DUKEDC.CON", NULL},
     //{ "Duke Caribbean: Life's a Beach (1.3D)", VACA13_CRC,  23559381, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE13_CRC, NULL, process_vaca13},
-    //{ "Duke Caribbean: Life's a Beach (PPak)", VACAPP_CRC,  22551333, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKEPP_CRC, NULL, process_vacapp15},
-    //{ "Duke Caribbean: Life's a Beach",        VACA15_CRC,  22521880, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, NULL, process_vacapp15},
-    //{ "Duke Caribbean: Life's a Beach",        DUKECB_CRC,  22213819, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, NULL, NULL},
-    //{ "Duke Caribbean: Life's a Beach",        (int32_t) 0x65B5F690, 22397273, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "VACATION.CON", NULL},
-    //{ "Duke Caribbean: Life's a Beach",        (int32_t) 0x64CF2351, 22213795, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "VACATION.CON", NULL},
-    //{ "Duke: Nuclear Winter",                  DUKENW_CRC,  16169365, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "NWINTER.CON", NULL},
-    //{ "Duke: Nuclear Winter Demo",             (int32_t) 0xC7EFBFA9,  10965909, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "NWINTER.CON", NULL},
-    //{ "Duke!ZONE II (1.3D)",                   DZ2_13_CRC,  26135388, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE13_CRC, "DZ-GAME.CON", NULL},
-    //{ "Duke!ZONE II",                          DZ2_PP_CRC,  44100411, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "DZ-GAME.CON", NULL},
-    //{ "Duke!ZONE II",                          (int32_t) 0x1E9516F1,  3186656, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "DZ-GAME.CON", NULL},
-    //{ "NAM",                                   NAM_CRC,     43448927, GAMEFLAG_NAM,                          0, NULL, NULL},
-    //{ "NAPALM",                                NAPALM_CRC,  44365728, GAMEFLAG_NAM|GAMEFLAG_NAPALM,          0, NULL, NULL},
-    //{ "WWII GI",                               WW2GI_CRC,   77939508, GAMEFLAG_WW2GI,                        0, NULL, NULL},
-    //{ "Platoon Leader",                        PLATOONL_CRC, 37852572, GAMEFLAG_WW2GI|GAMEFLAG_ADDON,        WW2GI_CRC, "PLATOONL.DEF", NULL},
-    //{ "Redneck Rampage",                       RR_CRC,     141174222, GAMEFLAG_RR,                           0, NULL, NULL },
-    //{ "Redneck Rampage: Rides Again",          RRRA_CRC,   191798609, GAMEFLAG_RR|GAMEFLAG_RRRA,             0, NULL, NULL },
+    { "Duke Caribbean: Life's a Beach (PPak)", VACAPP_CRC,  22551333, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKEPP_CRC, NULL, process_vacapp15},
+    { "Duke Caribbean: Life's a Beach",        VACA15_CRC,  22521880, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, NULL, process_vacapp15},
+    { "Duke Caribbean: Life's a Beach",        DUKECB_CRC,  22213819, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, NULL, NULL},
+    { "Duke Caribbean: Life's a Beach",        (int32_t) 0x65B5F690, 22397273, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "VACATION.CON", NULL},
+    { "Duke Caribbean: Life's a Beach",        (int32_t) 0x64CF2351, 22213795, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "VACATION.CON", NULL},
+    { "Duke: Nuclear Winter",                  DUKENW_CRC,  16169365, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "NWINTER.CON", NULL},
+    { "Duke: Nuclear Winter Demo",             (int32_t) 0xC7EFBFA9,  10965909, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "NWINTER.CON", NULL},
+   // { "Duke!ZONE II (1.3D)",                   DZ2_13_CRC,  26135388, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE13_CRC, "DZ-GAME.CON", NULL},
+    { "Duke!ZONE II",                          DZ2_PP_CRC,  44100411, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "DZ-GAME.CON", NULL},
+    { "Duke!ZONE II",                          (int32_t) 0x1E9516F1,  3186656, GAMEFLAG_DUKE|GAMEFLAG_ADDON, DUKE15_CRC, "DZ-GAME.CON", NULL},
+    { "NAM",                                   NAM_CRC,     43448927, GAMEFLAG_NAM,                          0, NULL, NULL},
+    { "NAPALM",                                NAPALM_CRC,  44365728, GAMEFLAG_NAM|GAMEFLAG_NAPALM,          0, NULL, NULL},
+    { "WWII GI",                               WW2GI_CRC,   77939508, GAMEFLAG_WW2GI,                        0, NULL, NULL},
+    { "Platoon Leader",                        PLATOONL_CRC, 37852572, GAMEFLAG_WW2GI|GAMEFLAG_ADDON,        WW2GI_CRC, "PLATOONL.DEF", NULL},
+    { "Redneck Rampage",                       RR_CRC,     141174222, GAMEFLAG_RR,                           0, NULL, NULL },
+    { "Redneck Rampage: Rides Again",          RRRA_CRC,   191798609, GAMEFLAG_RR|GAMEFLAG_RRRA,             0, NULL, NULL },
 };
 
 struct grpfile_t *foundgrps = NULL;
@@ -180,28 +179,28 @@ static void LoadList(const char * filename)
                 default:
                     break;
                 }
-
-                grpinfo_t * const fg = (grpinfo_t *)Xcalloc(1, sizeof(grpinfo_t));
-                fg->next = listgrps;
-                listgrps = fg;
-
-                if (gname)
-                    fg->name = Xstrdup(gname);
-
-                fg->size = gsize;
-                fg->crcval = gcrcval;
-                fg->dependency = gdepcrc;
-                fg->game = gflags;
-
-                if (gscript)
-                    fg->scriptname = dup_filename(gscript);
-
-                if (gdef)
-                    fg->defname = dup_filename(gdef);
-
-                if (grts)
-                    fg->rtsname = dup_filename(grts);
             }
+
+            grpinfo_t * const fg = (grpinfo_t *)Xcalloc(1, sizeof(grpinfo_t));
+            fg->next = listgrps;
+            listgrps = fg;
+
+            if (gname)
+                fg->name = Xstrdup(gname);
+
+            fg->size = gsize;
+            fg->crcval = gcrcval;
+            fg->dependency = gdepcrc;
+            fg->game = gflags;
+
+            if (gscript)
+                fg->scriptname = dup_filename(gscript);
+
+            if (gdef)
+                fg->defname = dup_filename(gdef);
+
+            if (grts)
+                fg->rtsname = dup_filename(grts);
             break;
         }
 
@@ -524,6 +523,7 @@ int32_t ScanGroups(void)
         "*.grp",
         "*.ssi",
         "*.dat",
+        "*.zip"
     };
 
     for (char const *extension : extensions)

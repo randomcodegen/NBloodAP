@@ -408,15 +408,6 @@ void ap_startup(void)
         AP_Printf("No AP connection settings defined; Launching vanilla game.");
         return;
     }
-
-    // [AP] Always load our patch groups and set the main con file
-    // ToDo find a better way to do this with dependency chaining?
-    // Eventually this might become entirely unnecessary if we get the grp
-    // handling right
-    const char customgrp[13] = "DUKE3DAP.zip";
-    G_AddGroup(customgrp);
-    const char customcon[13] = "DUKE3DAP.CON";
-    g_scriptNamePtr          = Xstrdup(customcon);
 }
 
 Json::Value read_json_from_grp(const char* filename)

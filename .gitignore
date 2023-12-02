@@ -113,6 +113,9 @@ project.xcworkspace/
 /*.spworld
 /*.spworld.save
 /*.esv
+/*.yaml
+/*.grpinfo
+/*.zip
 
 /platform/Windows/autoload
 /platform/Windows/movie
