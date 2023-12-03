@@ -8764,7 +8764,8 @@ check_enemy_sprite:
     {
         int const floorPicnum = sector[pSprite->sectnum].floorpicnum;
 
-        if (!RR && (floorPicnum == PURPLELAVA || sector[pSprite->sectnum].ceilingpicnum == PURPLELAVA))
+        // [AP] Make purple slime only hurt when on the floor so we don't have to make boots progression items
+        if (!RR && (floorPicnum == PURPLELAVA || sector[pSprite->sectnum].ceilingpicnum == PURPLELAVA) && (!AP || pPlayer->on_ground))
         {
             if (pPlayer->inv_amount[GET_BOOTS] > 0)
             {
