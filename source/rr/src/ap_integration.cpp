@@ -482,6 +482,26 @@ void ap_parse_levels()
 
 }
 
+void ap_fix_spawns(void)
+{
+    // Tune blimp spawn items to not include progression stuff
+    g_blimpSpawnItems[0] = RPGAMMO;
+    g_blimpSpawnItems[1] = DEVISTATORAMMO;
+    g_blimpSpawnItems[2] = DEVISTATORAMMO;
+    g_blimpSpawnItems[3] = RPGAMMO;
+    g_blimpSpawnItems[4] = RPGAMMO;
+    g_blimpSpawnItems[5] = DEVISTATORAMMO;
+    g_blimpSpawnItems[6] = DEVISTATORAMMO;
+    g_blimpSpawnItems[7] = SIXPAK;
+    g_blimpSpawnItems[8] = SIXPAK;
+    g_blimpSpawnItems[9] = RPGAMMO;
+    g_blimpSpawnItems[10] = RPGAMMO;
+    g_blimpSpawnItems[11] = SIXPAK;
+    g_blimpSpawnItems[12] = RPGAMMO;
+    g_blimpSpawnItems[13] = FREEZEAMMO;
+    g_blimpSpawnItems[14] = FREEZEAMMO;
+}
+
 ap_connection_settings_t ap_connection_settings = {AP_DISABLED, "", "", "", "", ""};
 
 void ap_initialize(void)
@@ -497,6 +517,8 @@ void ap_initialize(void)
     {
         // Additional initializations after the archipelago setup is done
         ap_parse_levels();
+        // Fix spawns
+        ap_fix_spawns();
     }
 }
 
