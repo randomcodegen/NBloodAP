@@ -1003,7 +1003,8 @@ static void VM_AddWeapon(DukePlayer_t * const pPlayer, int const weaponNum, int 
         return;
     }
 
-    if ((pPlayer->gotweapon & (1 << weaponNum)) == 0)
+    // [AP] No outside weapon unlocks! Just provide ammo so enemy drops still work reasonably well
+    if (!AP && ((pPlayer->gotweapon & (1 << weaponNum)) == 0))
     {
         P_AddWeapon(pPlayer, weaponNum);
     }
@@ -1041,6 +1042,7 @@ static void VM_AddAmmo(DukePlayer_t * const pPlayer, int const weaponNum, int co
 
 static void VM_AddInventory(DukePlayer_t * const pPlayer, int const itemNum, int const nAmount)
 {
+    // [AP] Only allow armor pickups to work, so enemy drops behave nicely still
     switch (itemNum)
     {
     case GET_STEROIDS:
@@ -1050,6 +1052,7 @@ static void VM_AddInventory(DukePlayer_t * const pPlayer, int const itemNum, int
     case GET_HEATS:
     case GET_FIRSTAID:
     case GET_BOOTS:
+        if (AP) return;
         pPlayer->inven_icon = inv_to_icon[itemNum];
         pPlayer->inv_amount[itemNum] = nAmount;
         break;
@@ -1064,6 +1067,7 @@ static void VM_AddInventory(DukePlayer_t * const pPlayer, int const itemNum, int
     }
 
     case GET_ACCESS:
+        if (AP) return;
         if (RR)
         {
             switch (vm.pSprite->lotag)
@@ -1085,7 +1089,7 @@ static void VM_AddInventory(DukePlayer_t * const pPlayer, int const itemNum, int
         }
         break;
 
-        default: CON_ERRPRINTF("invalid inventory item %d\n", itemNum); break;
+    default: CON_ERRPRINTF("invalid inventory item %d\n", itemNum); break;
     }
 }
 

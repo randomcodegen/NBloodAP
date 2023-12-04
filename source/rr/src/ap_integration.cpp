@@ -593,18 +593,6 @@ void force_set_inventory_item(uint8_t invnum)
         P_SelectNextInvItem(ACTIVE_PLAYER);
 }
 
-static uint16_t get_inv_item_capacity(Json::Value &item_info)
-{
-    if (item_info["dynamic"].asBool())
-    {
-        // Use dynamic values from slot data if they exist
-        uint16_t slot_capacity = json_get_int(ap_game_settings["invinc"][item_info["invnum"].asString()], 0);
-        if (slot_capacity > 0)
-            return slot_capacity;
-    }
-    return json_get_int(item_info["capacity"], 0);
-}
-
 /* 
   Apply whatever item we just got to our current game state 
 
@@ -614,6 +602,9 @@ static uint16_t get_inv_item_capacity(Json::Value &item_info)
 static void ap_get_item(ap_net_id_t item_id, bool silent)
 {
     Json::Value item_info = ap_item_info[item_id];
+    // Check if we have a dynamic override for the item in our seed slot data
+    if (!ap_game_settings["dynamic"][std::to_string(item_id)].isNull())
+        item_info = ap_game_settings["dynamic"][std::to_string(item_id)];
     bool notify = !(silent || item_info["silent"].asBool());
 
     std::string item_type = item_info["type"].asString();
@@ -688,6 +679,11 @@ static void ap_get_item(ap_net_id_t item_id, bool silent)
 
         // Saturate
         int64_t max_capacity = json_get_int(item_info["max_capacity"], -1);
+        // Special case, armor has a dynamic max value tracked already
+        // Armor should usually be provided with an "armor" type item instead, but no
+        // Reason not to support this
+        if (invnum == GET_SHIELD)
+            max_capacity = ACTIVE_PLAYER->max_shield_amount;
         if (max_capacity >= 0 && ACTIVE_PLAYER->inv_amount[invnum] > max_capacity)
             ACTIVE_PLAYER->inv_amount[invnum] = max_capacity;
 
@@ -702,11 +698,11 @@ static void ap_get_item(ap_net_id_t item_id, bool silent)
 
         // If the item is not unlocked yet, just add it to the min capacity
         if (!inv_available[invnum])
-            inv_capacity[invnum] += get_inv_item_capacity(item_info);
+            inv_capacity[invnum] += json_get_int(item_info["capacity"], 0);
         else
         {
             // Inventory item unlocked, just increase capacity
-            ACTIVE_PLAYER->inv_amount[invnum] += get_inv_item_capacity(item_info);
+            ACTIVE_PLAYER->inv_amount[invnum] += json_get_int(item_info["capacity"], 0);
             // Saturate
             int64_t max_capacity = json_get_int(item_info["max_capacity"], -1);
             if (max_capacity >= 0 && ACTIVE_PLAYER->inv_amount[invnum] > max_capacity)
@@ -724,16 +720,29 @@ static void ap_get_item(ap_net_id_t item_id, bool silent)
     }
     else if (item_type == "health")
     {
+        uint16_t capacity = json_get_int(item_info["capacity"], 0);
+        ACTIVE_PLAYER->max_player_health += capacity;
         uint16_t healing = json_get_int(item_info["heal"], 0);
         // Non standard max health, like for atomic health
-        uint16_t capacity = json_get_int(item_info["capacity"], -1);
-        if (ACTIVE_PLAYER->max_player_health > capacity)
-            capacity = ACTIVE_PLAYER->max_player_health;
-        if (sprite[ACTIVE_PLAYER->i].extra < capacity)
+        bool overheal = item_info["overheal"].asBool();
+        uint16_t max_health = overheal ? (2 * ACTIVE_PLAYER->max_player_health) : ACTIVE_PLAYER->max_player_health;
+        if (sprite[ACTIVE_PLAYER->i].extra < max_health)
         {
             sprite[ACTIVE_PLAYER->i].extra += healing;
-            if (sprite[ACTIVE_PLAYER->i].extra > capacity)
-                sprite[ACTIVE_PLAYER->i].extra = capacity;
+            if (sprite[ACTIVE_PLAYER->i].extra > max_health)
+                sprite[ACTIVE_PLAYER->i].extra = max_health;
+        }
+    }
+    else if (item_type == "armor")
+    {
+        uint16_t capacity = json_get_int(item_info["maxcapacity"], 0);
+        ACTIVE_PLAYER->max_shield_amount += capacity;
+        uint16_t new_armor = json_get_int(item_info["capacity"], 0);
+        if (ACTIVE_PLAYER->inv_amount[GET_SHIELD] < ACTIVE_PLAYER->max_shield_amount)
+        {
+            ACTIVE_PLAYER->inv_amount[GET_SHIELD] += new_armor;
+            if (ACTIVE_PLAYER->inv_amount[GET_SHIELD] > ACTIVE_PLAYER->max_shield_amount)
+                ACTIVE_PLAYER->inv_amount[GET_SHIELD] = ACTIVE_PLAYER->max_shield_amount;
         }
     }
 }
@@ -811,31 +820,32 @@ static void ap_set_default_inv(void)
         ACTIVE_PLAYER->ammo_amount[i] = 0;
     }
 
-    // ToDo use dynamic settings from AP seed
+    // Set default max ammo amounts
+    ACTIVE_PLAYER->max_ammo_amount[PISTOL_WEAPON__STATIC] = json_get_int(ap_game_settings["maximum"]["pistol"], 120);
+    ACTIVE_PLAYER->max_ammo_amount[SHOTGUN_WEAPON__STATIC] = json_get_int(ap_game_settings["maximum"]["shotgun"], 20);
+    ACTIVE_PLAYER->max_ammo_amount[CHAINGUN_WEAPON__STATIC] = json_get_int(ap_game_settings["maximum"]["chaingun"], 100);
+    ACTIVE_PLAYER->max_ammo_amount[RPG_WEAPON__STATIC] = json_get_int(ap_game_settings["maximum"]["rpg"], 5);
+    ACTIVE_PLAYER->max_ammo_amount[HANDBOMB_WEAPON__STATIC] = json_get_int(ap_game_settings["maximum"]["pipebomb"], 5);
+    ACTIVE_PLAYER->max_ammo_amount[SHRINKER_WEAPON__STATIC] = json_get_int(ap_game_settings["maximum"]["shrinker"], 5);
+    ACTIVE_PLAYER->max_ammo_amount[DEVISTATOR_WEAPON__STATIC] = json_get_int(ap_game_settings["maximum"]["devastator"], 25);
+    ACTIVE_PLAYER->max_ammo_amount[TRIPBOMB_WEAPON__STATIC] = json_get_int(ap_game_settings["maximum"]["tripmine"], 3);
+    ACTIVE_PLAYER->max_ammo_amount[FREEZE_WEAPON__STATIC] = json_get_int(ap_game_settings["maximum"]["freezethrower"], 50);
+    ACTIVE_PLAYER->max_ammo_amount[GROW_WEAPON__STATIC] = json_get_int(ap_game_settings["maximum"]["expander"], 15);
+    ACTIVE_PLAYER->max_player_health = json_get_int(ap_game_settings["maximum"]["health"], 100);
+    ACTIVE_PLAYER->max_shield_amount = json_get_int(ap_game_settings["maximum"]["armor"], 100);
     // Always have mighty foot and pistol
     ACTIVE_PLAYER->gotweapon = 3;
     // Always have pistol ammo, and a bit more since we might have no other weapons
     ACTIVE_PLAYER->ammo_amount[PISTOL_WEAPON__STATIC] = 96;
-    // Set default max ammo amounts
-    ACTIVE_PLAYER->max_ammo_amount[PISTOL_WEAPON__STATIC] = 120;
-    ACTIVE_PLAYER->max_ammo_amount[SHOTGUN_WEAPON__STATIC] = 20;
-    ACTIVE_PLAYER->max_ammo_amount[CHAINGUN_WEAPON__STATIC] = 100;
-    ACTIVE_PLAYER->max_ammo_amount[RPG_WEAPON__STATIC] = 5;
-    ACTIVE_PLAYER->max_ammo_amount[HANDBOMB_WEAPON__STATIC] = 5;
-    ACTIVE_PLAYER->max_ammo_amount[SHRINKER_WEAPON__STATIC] = 5;
-    ACTIVE_PLAYER->max_ammo_amount[DEVISTATOR_WEAPON__STATIC] = 25;
-    ACTIVE_PLAYER->max_ammo_amount[TRIPBOMB_WEAPON__STATIC] = 3;
-    ACTIVE_PLAYER->max_ammo_amount[FREEZE_WEAPON__STATIC] = 50;
-    ACTIVE_PLAYER->max_ammo_amount[GROW_WEAPON__STATIC] = 5;
 
     ability_unlocks.clear();
-    if (!ap_game_settings["lock_crouch"].asBool())
+    if (!ap_game_settings["lock"]["crouch"].asBool())
         ability_unlocks["crouch"] = true;
-    if (!ap_game_settings["lock_dive"].asBool())
+    if (!ap_game_settings["lock"]["dive"].asBool())
         ability_unlocks["dive"] = true;
-    if (!ap_game_settings["lock_jump"].asBool())
+    if (!ap_game_settings["lock"]["jump"].asBool())
         ability_unlocks["jump"] = true;
-    if (!ap_game_settings["lock_run"].asBool())
+    if (!ap_game_settings["lock"]["run"].asBool())
         ability_unlocks["run"] = true;
 }
 
