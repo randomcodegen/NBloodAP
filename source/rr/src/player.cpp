@@ -7174,6 +7174,14 @@ static int P_DoFist(DukePlayer_t *pPlayer)
 
             ud.m_level_number = ud.level_number;
         }
+        // [AP] Just stop fist pumping after a secret exit and continue on
+        else if (AP && ud.secretlevel > 0)
+        {
+            ap_check_exit(ud.secretlevel);
+            ud.secretlevel = 0;
+            pPlayer->fist_incs = 0;
+            return 0;
+        }
         else
             P_EndLevel();
 
