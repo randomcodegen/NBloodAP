@@ -25,33 +25,65 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "cheats.h"
 #include "ap_lib.h"
 
+// [AP] Disable game breaking cheats outside of debug mode
+
 // KEEPINSYNC game.h: enum cheatindex_t
 char CheatStrings [NUMCHEATS][MAXCHEATLEN] =
 {
+#ifndef AP_DEBUG_ON
+    "<RESERVED>",
+    "<RESERVED>",
+    "<RESERVED>",
+#else
     "cornholio",    // 0
     "stuff",        // 1
     "scotty###",    // 2
+#endif
     "coords",       // 3
     "view",         // 4
     "time",         // 5
+#ifndef AP_DEBUG_ON
+    "<RESERVED>",
+#else
     "unlock",       // 6
+#endif
     "cashman",      // 7
+#ifndef AP_DEBUG_ON
+    "<RESERVED>",
+#else
     "items",        // 8
+#endif
     "rate",         // 9
     "skill#",       // 10
     "beta",         // 11
+#ifndef AP_DEBUG_ON
+    "<RESERVED>",
+    "<RESERVED>",
+#else
     "hyper",        // 12
     "monsters",     // 13
+#endif
     "<RESERVED>",   // 14
     "<RESERVED>",   // 15
     "todd",         // 16
     "showmap",      // 17
+#ifndef AP_DEBUG_ON
+    "<RESERVED>",
+#else
     "kroz",         // 18
+#endif
     "allen",        // 19
+#ifndef AP_DEBUG_ON
+    "<RESERVED>",
+    "<RESERVED>",
+    "<RESERVED>",
+    "<RESERVED>",
+#else
     "clip",         // 20
     "weapons",      // 21
     "inventory",    // 22
     "keys",         // 23
+#endif
     "debug",        // 24
     "<RESERVED>",   // 25
     "<RESERVED>",   // 26
@@ -69,8 +101,6 @@ char CheatStrings [NUMCHEATS][MAXCHEATLEN] =
     "<RESERVED>",   // 38
     "<RESERVED>",   // 39
 };
-
-// [AP] Disable game breaking cheats outside of debug mode
 
 const uint32_t CheatFunctionFlags [NUMCHEATS] =
 {
@@ -102,10 +132,11 @@ const uint32_t CheatFunctionFlags [NUMCHEATS] =
     1 << CHEATFUNC_QUOTEBETA,
 #ifndef AP_DEBUG_ON
     0,
+    0,
 #else
     1 << CHEATFUNC_HYPER,
-#endif
     1 << CHEATFUNC_MONSTERS,
+#endif
     0,
     0,
     1 << CHEATFUNC_QUOTETODD,

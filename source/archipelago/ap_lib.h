@@ -1,7 +1,7 @@
 #pragma once
 
 // Debug behaviour for development only
-#ifndef NDEDUG
+#ifdef _DEBUG
 #ifndef AP_DEBUG_ON
 #define AP_DEBUG_ON
 #endif
