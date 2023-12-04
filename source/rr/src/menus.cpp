@@ -3721,7 +3721,7 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
 
         int32_t oy = origin.y;
 
-        mgametextcenter(origin.x, MENU_INCREMENT(MENU_YOFFSET), "Developer");
+        mgametextcenter(origin.x, MENU_INCREMENT(MENU_YOFFSET), "Original Developer");
         creditsminitext(origin.x + (160 << 16), MENU_INCREMENT(11), "Alexey \"Nuke.YKT\" Skrybykin", 8);
 
         mgametextcenter(origin.x, MENU_INCREMENT(11), "Special thanks to");
@@ -3731,6 +3731,13 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
         creditsminitext(origin.x + (160 << 16), MENU_INCREMENT(7), "\"NY00123\"", 8);
         creditsminitext(origin.x + (160 << 16), MENU_INCREMENT(7), "\"MetHy\"", 8);
         creditsminitext(origin.x + (160 << 16), MENU_INCREMENT(7), "\"sirlemonhead\"", 8);
+
+        mgametextcenter(origin.x, MENU_INCREMENT(11), "Archipelago integration by");
+        creditsminitext(origin.x + (160 << 16), MENU_INCREMENT(11), "\"Tarrik\"", 8);
+
+        mgametextcenter(origin.x, MENU_INCREMENT(11), "Special thanks to");
+        creditsminitext(origin.x + (160 << 16), MENU_INCREMENT(7), "\"rand0\"", 8);
+        creditsminitext(origin.x + (160 << 16), MENU_INCREMENT(7), "\"oasiz\"", 8);
 
 #undef MENU_INCREMENT
 #undef MENU_YOFFSET
