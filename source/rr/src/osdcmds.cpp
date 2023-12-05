@@ -1480,46 +1480,19 @@ static int osdcmd_ap_missing(osdcmdptr_t parm)
 
     std::string map = ap_format_map_id(ud.level_number, ud.volume_number);
     AP_Printf("Missing locations for " + map + ":");
-    for (unsigned int i = 0; i < Numsprites; i++)
-    {
-        // Filter to AP items
-        if (!(sprite[i].picnum == AP_ITEM__STATIC || sprite[i].picnum == AP_PROG__STATIC)) continue;
-        ap_location_t loc = sprite[i].lotag;
-        // Skip checked locations, because sprite might not have been overwritten since deletion
-        if (AP_LOCATION_CHECKED(loc)) continue;
-        AP_Printf(AP_GetLocationName(AP_NET_ID(loc)));
-#ifdef AP_DEBUG_ON
-        AP_Debugf("   at X:  " + std::to_string(sprite[i].x) + "  Y:  " + std::to_string(sprite[i].y) + "  Z:  " + std::to_string(sprite[i].z));
-#endif
-    }
 
-    Json::Value& cur_secret_locations = ap_game_config["locations"][map]["sectors"];
-    Json::Value sector_info;
-    for (unsigned int i = 0; i < numsectors; i++)
+    Json::Value& cur_map_data = ap_game_config["locations"][map];
+    for (std::string category : cur_map_data.getMemberNames())
     {
-        if (sector[i].lotag == 32767)
+        for (std::string entry_str : cur_map_data[category].getMemberNames())
         {
-            // Secret sector, check if it is a valid location for the AP seed and has been collected already
-            sector_info = cur_secret_locations[std::to_string(i)];
-            ap_location_t loc = sector_info["id"].isInt() ? sector_info["id"].asInt() : -1;
-            if (loc < 0)
+            if (!cur_map_data[category][entry_str]["id"].isInt())
                 continue;
-            if (!AP_LOCATION_CHECKED(loc))
+            ap_location_t loc = cur_map_data[category][entry_str]["id"].asInt();
+            if (AP_VALID_LOCATION(loc) && !AP_LOCATION_CHECKED(loc))
             {
                 AP_Printf(AP_GetLocationName(AP_NET_ID(loc)));
             }
-        }
-    }
-
-    Json::Value& cur_exit_locations = ap_game_config["locations"][map]["exits"];
-    for (std::string exit_id : cur_exit_locations.getMemberNames())
-    {
-        ap_location_t loc = cur_exit_locations[exit_id]["id"].isInt() ? cur_exit_locations[exit_id]["id"].asInt() : -1;
-        if (loc < 0)
-            continue;
-        if (!AP_LOCATION_CHECKED(loc))
-        {
-            AP_Printf(AP_GetLocationName(AP_NET_ID(loc)));
         }
     }
 
