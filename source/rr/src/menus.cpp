@@ -8667,6 +8667,7 @@ void ap_init_menu(void)
     {
         MEO_MAIN_NEWGAME.linkID = MENU_AP_LEVEL;
         MEO_MAIN_NEWGAME_INGAME.linkID = MENU_AP_LEVEL;
+        ud.m_volume_number = ap_active_episodes[0];
     }
 }
 
