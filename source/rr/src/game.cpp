@@ -8830,7 +8830,7 @@ MAIN_LOOP_RESTART:
                         break;
                     }
 
-                    // [AP] Check victory and save progress
+                    // [AP] Periodic processing outside of game mode
                     if (AP)
                         if (ap_process_periodic())
                             goto MAIN_LOOP_RESTART;

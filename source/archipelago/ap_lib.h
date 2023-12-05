@@ -99,7 +99,7 @@ extern void AP_LibShutdown(void);
 typedef struct {
     std::map<ap_net_id_t, uint16_t> persistent;  // Counts of all items received. Do not modify, this is the progression state!
     std::map<ap_net_id_t, uint16_t> progressive;  // Counts for each progressive item applied. Can be safely cleared when reapplying all items to keep track again
-    std::vector<ap_net_id_t> ap_item_queue;  // Queue of items to be provided to the player whenever he's in-game
+    std::vector<std::pair<ap_net_id_t, bool>> ap_item_queue;  // Queue of items to be provided to the player whenever he's in-game
     Json::Value dynamic_player;  // Game specific dynamic state. This should be conserved, but contains no progression relevant information
     bool need_sync;  // Flag specifying relevant data was changed. If set, will be synced to the AP Server on next opportunity
 } ap_state_t;

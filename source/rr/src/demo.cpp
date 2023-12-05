@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "savegame.h"
 #include "input.h"
 #include "screens.h"
-#include "ap_lib.h"
+#include "ap_integration.h"
 
 char g_firstDemoFile[BMAX_PATH];
 
@@ -1122,6 +1122,10 @@ nextdemo_nomenu:
         // updating totalclock when profiling (both via sampletimer()):
         if (!Demo_IsProfiling())
             G_HandleAsync();
+
+        // [AP] Periodic processing outside of game mode
+        if (AP)
+            ap_process_periodic();
 
         if (g_player[myconnectindex].ps->gm == MODE_GAME)
         {

@@ -598,13 +598,29 @@ void force_set_inventory_item(uint8_t invnum)
   Upgrade only provides just the unlock, but no ammo/capacity. This is used
   when loading savegames.
 */
-static void ap_get_item(ap_net_id_t item_id, bool silent)
+static void ap_get_item(ap_net_id_t item_id, bool silent, bool is_new)
 {
     Json::Value item_info = ap_item_info[item_id];
     // Check if we have a dynamic override for the item in our seed slot data
     if (!ap_game_settings["dynamic"][std::to_string(item_id)].isNull())
         item_info = ap_game_settings["dynamic"][std::to_string(item_id)];
     bool notify = !(silent || item_info["silent"].asBool());
+
+    // Store counts for stateful items
+    if (is_new && item_info["persistent"].asBool())
+    {
+        uint16_t count = 0;
+        if (AP_HasItem(item_id))
+        {
+            count = ap_game_state.persistent[item_id];
+        }
+        // Increment
+        count++;
+        // Set to 1 if it's a unique item
+        if (item_info["unique"].asBool())
+            count = 1;
+        ap_game_state.persistent[item_id] = count;
+    }
 
     std::string item_type = item_info["type"].asString();
     // Poor man's switch
@@ -618,7 +634,7 @@ static void ap_get_item(ap_net_id_t item_id, bool silent)
             // Repeat the last entry if we have more copies
             uint16_t idx = (item_info["items"].size() < prog_count ? item_info["items"].size() : prog_count) - 1;
             ap_net_id_t next_item = AP_NET_ID(json_get_int(item_info["items"][idx], 0));
-            ap_get_item(next_item, silent);
+            ap_get_item(next_item, silent, false);
         }
     }
     else if (item_type == "key" && item_for_current_level(item_info))
@@ -770,9 +786,9 @@ void ap_process_game_tic(void)
     // Check for items in our queue to process
     while (!ap_game_state.ap_item_queue.empty())
     {
-        ap_net_id_t item_id = ap_game_state.ap_item_queue.front();
+        auto queue_item = ap_game_state.ap_item_queue.front();
         ap_game_state.ap_item_queue.erase(ap_game_state.ap_item_queue.begin());
-        ap_get_item(item_id, false);
+        ap_get_item(queue_item.first, !queue_item.second, true);
     }
 
     // Process outstanding messages to quote at the player
@@ -784,6 +800,25 @@ bool ap_process_periodic(void)
 {
     bool reset_game = false;
 
+    // Peek item queue and process stuff we already can while not in game
+    if (!(ACTIVE_PLAYER->gm & MODE_GAME))
+    {
+        for (auto iter = ap_game_state.ap_item_queue.begin(); iter != ap_game_state.ap_item_queue.end();)
+        {
+            Json::Value item_info = ap_item_info[iter->first];
+
+            // If it's a silent item or a map unlock, process them outside the game
+            // already
+            if (!iter->second || item_info["type"].asString() == "map")
+            {
+                ap_get_item(iter->first, true, true);
+                // And then remove the entry from the queue
+                iter = ap_game_state.ap_item_queue.erase(iter);
+            }
+            else iter++;
+        }
+    }
+
     // Sync our save status, this only does something if there are changes
     // So it's save to call it every game tic
     AP_SyncProgress();
@@ -791,7 +826,6 @@ bool ap_process_periodic(void)
     // Check if we have reached all goals
     if (AP_CheckVictory())
     {
-        // ToDo seems to not return to main menu as expected?
         ud.volume_number = 2;
         ud.eog = 1;
         G_BonusScreen(0);
@@ -935,7 +969,7 @@ void ap_sync_inventory()
     for (auto item_pair : ap_game_state.persistent)
     {
         for(unsigned int i = 0; i < item_pair.second; i++)
-            ap_get_item(item_pair.first, true);
+            ap_get_item(item_pair.first, true, false);
     }
 
     // Restore dynamic data like HP and ammo from last map

@@ -12,7 +12,7 @@ ap_location_state_t ap_locations[AP_MAX_LOCATION];
 ap_state_t ap_game_state = { 
     std::map<ap_net_id_t, uint16_t>(), 
     std::map<ap_net_id_t, uint16_t>(),
-    std::vector<ap_net_id_t>(),
+    std::vector<std::pair<ap_net_id_t, bool>>(),
     Json::Value(),
     false
 };
@@ -183,27 +183,8 @@ void AP_ClearAllItems()
 void AP_ItemReceived(int64_t item_id, int slot, bool notify)
 {
     if (!ap_item_info.count(item_id)) return;  // Don't know anything about this type of item, ignore it
-    Json::Value item_info = ap_item_info[item_id];
-
-    // Store counts for stateful items
-    if (item_info["persistent"].asBool())
-    {
-        uint16_t count = 0;
-        if (AP_HasItem(item_id))
-        {
-            count = ap_game_state.persistent[item_id];
-        }
-        // Increment
-        count++;
-        // Set to 1 if it's a unique item
-        if (item_info["unique"].asBool())
-            count = 1;
-        ap_game_state.persistent[item_id] = count;
-    }
-
-    // If we should tell the player about the item, put it into the item queue
-    if (notify)
-        ap_game_state.ap_item_queue.push_back(item_id);
+    // Push item and notification flag to queue
+    ap_game_state.ap_item_queue.push_back(std::make_pair(item_id, notify));
 }
 
 void AP_ExtLocationCheck(int64_t location_id)
