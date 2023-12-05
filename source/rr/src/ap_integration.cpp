@@ -105,8 +105,7 @@ static void ap_map_patch_sprites(void)
         else
         {
             // Unused sprite, set it up for deletion
-            sprite[i].lotag  = -1;
-            sprite[i].picnum = AP_ITEM__STATIC;
+            A_DeleteSprite(i);
         }
     }
 
