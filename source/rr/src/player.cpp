@@ -7126,11 +7126,15 @@ void P_EndLevel(void)
     //     if (ud.multimode != 1 && ud.coop != 1 && dukematch_mode != 1)
     //         return;
     // }
+    if (AP)
+    {
+        // [AP] reached a level exit, register it and continue
+        ap_check_exit(ud.secretlevel);
+        return;
+    }
+
     for (bssize_t TRAVERSE_CONNECT(playerNum))
         g_player[playerNum].ps->gm = MODE_EOL;
-
-    // [AP] reached a level exit, register it
-    ap_check_exit(ud.secretlevel);
 
     if (ud.from_bonus)
     {
@@ -7175,7 +7179,7 @@ static int P_DoFist(DukePlayer_t *pPlayer)
             ud.m_level_number = ud.level_number;
         }
         // [AP] Just stop fist pumping after a secret exit and continue on
-        else if (AP && ud.secretlevel > 0)
+        else if (AP)
         {
             ap_check_exit(ud.secretlevel);
             ud.secretlevel = 0;
@@ -8265,6 +8269,13 @@ check_enemy_sprite:
         }
         else if (pPlayer->timebeforeexit == 1)
         {
+            if (AP)
+            {
+                // [AP] reached a level exit, register it and continue
+                ap_check_exit(0);
+                return;
+            }
+
             if (REALITY)
             {
                 FX_StopAllSounds();
@@ -8272,8 +8283,6 @@ check_enemy_sprite:
             }
             for (bssize_t TRAVERSE_CONNECT(playerNum))
                 g_player[playerNum].ps->gm = MODE_EOL;
-            // [AP] reached a level exit, register it
-            ap_check_exit(0);
 
             if (RR && ud.level_number == 6 && ud.volume_number == 0)
                 g_turdLevel = 1;
@@ -9624,10 +9633,15 @@ void P_DHProcessInput(int playerNum)
         }
         else if (pPlayer->timebeforeexit == 1)
         {
+            if (AP)
+            {
+                // [AP] reached a level exit, register it and continue
+                ap_check_exit(0);
+                return;
+            }
+
             for (bssize_t TRAVERSE_CONNECT(playerNum))
                 g_player[playerNum].ps->gm = MODE_EOL;
-            // [AP] reached a level exit, register it
-            ap_check_exit(0);
 
             ud.level_number   = (++ud.level_number < MAXLEVELS) ? ud.level_number : 0;
             ud.m_level_number = ud.level_number;
