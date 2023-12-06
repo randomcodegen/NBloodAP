@@ -225,24 +225,33 @@ bool sync_wait_for_data(uint32_t timeout)
     Json::Value save_data;
     std::string serialized_save_data;
 
+    // Wait for server connection and data package exchange to occur
+    auto start_time = std::chrono::steady_clock::now();
+    while (AP_GetDataPackageStatus() != AP_DataPackageSyncStatus::Synced)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        if (std::chrono::steady_clock::now() - start_time > std::chrono::milliseconds(timeout))
+        {
+            AP_Errorf("Timed out connecting to server.");
+            return TRUE;
+        }
+    }
+
+    // Now fetch our save data
     AP_GetServerDataRequest save_req = {
         AP_RequestStatus::Pending,
         AP_GetPrivateServerDataPrefix() + "_save_data",
         (void *)&serialized_save_data,
         AP_DataType::Raw
     };
-
-    // Request save data from server
     AP_GetServerData(&save_req);
 
-    // Wait for server connection and data package exchange to occur
-    auto start_time = std::chrono::steady_clock::now();
-    while ((AP_GetDataPackageStatus() != AP_DataPackageSyncStatus::Synced) && (save_req.status != AP_RequestStatus::Done))
+    while (save_req.status != AP_RequestStatus::Done)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         if (std::chrono::steady_clock::now() - start_time > std::chrono::milliseconds(timeout))
         {
-            AP_Errorf("Timed out connecting to server.");
+            AP_Errorf("Timed out fetching save data from server.");
             return TRUE;
         }
     }
