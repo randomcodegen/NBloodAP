@@ -547,6 +547,16 @@ void force_set_player_weapon(uint8_t weaponnum)
     if (ACTIVE_PLAYER->curr_weapon == weaponnum) return;  // Already equipped
     if (!(ACTIVE_PLAYER->gotweapon & (1 << weaponnum))) weaponnum = PISTOL_WEAPON__STATIC;  // Weapon not unlocked, switch to pistol
 
+    switch(weaponnum)
+    {
+    case SHRINKER_WEAPON__STATIC:
+        ACTIVE_PLAYER->subweapon &= ~(1<<GROW_WEAPON);
+        break;
+    case GROW_WEAPON__STATIC:
+        ACTIVE_PLAYER->subweapon |= (1<<GROW_WEAPON);
+        break;
+    }
+
     if (RR && weaponnum == HANDBOMB_WEAPON)
         ACTIVE_PLAYER->last_weapon = -1;
 

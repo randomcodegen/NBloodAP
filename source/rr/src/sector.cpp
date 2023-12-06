@@ -4490,7 +4490,8 @@ CHECKINV1:
                         {
                             if ((pPlayer->subweapon&(1 << GROW_WEAPON)) == (1 << GROW_WEAPON))
                                 weaponNum = GROW_WEAPON;
-                            else if (pPlayer->ammo_amount[SHRINKER_WEAPON] == 0)
+                            // [AP] Can have expander without shrinker, just select that then
+                            else if (pPlayer->ammo_amount[SHRINKER_WEAPON] == 0 || (AP && !(pPlayer->gotweapon & (1 << SHRINKER_WEAPON))))
                             {
                                 weaponNum = GROW_WEAPON;
                                 pPlayer->subweapon |= (1 << GROW_WEAPON);
