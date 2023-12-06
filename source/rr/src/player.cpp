@@ -8273,6 +8273,7 @@ check_enemy_sprite:
             {
                 // [AP] reached a level exit, register it and continue
                 ap_check_exit(0);
+                pPlayer->timebeforeexit = 0;
                 return;
             }
 

@@ -485,6 +485,10 @@ void G_DrawInventory(const DukePlayer_t *p)
 {
     int32_t n, j = 0, x = 0, y;
 
+    // [AP] Inventory is drawn fixed for AP seeds, so no need to display selection on screen center
+    if (AP)
+        return;
+
     n = (p->inv_amount[GET_JETPACK] > 0)<<3;
     if (n&8) j++;
     n |= (p->inv_amount[GET_SCUBA] > 0)<<5;
@@ -586,10 +590,9 @@ void G_DrawFrags(void)
     }
 }
 
-// [AP] Just use raw numbers in AP mode
-static int32_t G_GetInvAmount(const DukePlayer_t *p)
+static int32_t G_GetInvAmountId(const DukePlayer_t *p, uint8_t inv_id)
 {
-    switch (p->inven_icon)
+    switch (inv_id)
     {
     case ICON_FIRSTAID:
         return p->inv_amount[GET_FIRSTAID];
@@ -611,6 +614,12 @@ static int32_t G_GetInvAmount(const DukePlayer_t *p)
     }
 
     return -1;
+}
+
+// [AP] Just use raw numbers in AP mode
+static int32_t G_GetInvAmount(const DukePlayer_t *p)
+{
+    return G_GetInvAmountId(p, p->inven_icon);
 }
 
 static void G_DrawWeaponBar(const DukePlayer_t *p)
@@ -671,6 +680,21 @@ static inline void rotatesprite_althudr(int32_t sx, int32_t sy, int32_t z, int16
     rotatesprite_(sbarxr(sx), sbary(sy), z, a, picnum, dashade, dapalnum, dastat, 0, 0, 0, 0, xdim - 1, ydim - 1);
 }
 
+const int32_t ap_ammo_sprites[MAX_WEAPONS] = { -1, AMMO__STATIC, SHOTGUNAMMO__STATIC, BATTERYAMMO__STATIC,
+    RPGAMMO__STATIC, HBOMBAMMO__STATIC, CRYSTALAMMO__STATIC, DEVISTATORAMMO__STATIC,
+    TRIPBOMBSPRITE__STATIC, FREEZEAMMO__STATIC+1, HBOMBAMMO__STATIC, GROWAMMO__STATIC
+};
+
+const int32_t ap_weapon_sprites[MAX_WEAPONS] = { -1, FIRSTGUNSPRITE__STATIC, SHOTGUNSPRITE__STATIC, CHAINGUNSPRITE__STATIC,
+RPGSPRITE__STATIC, HEAVYHBOMB__STATIC, SHRINKERSPRITE__STATIC, DEVISTATORSPRITE__STATIC,
+TRIPBOMBSPRITE__STATIC, FREEZESPRITE__STATIC+1, -1, GROWSPRITEICON__STATIC
+};
+
+static void G_DrawAPString(unsigned int x, unsigned int y, char* text, unsigned int shade, unsigned int pal, unsigned int zoom, unsigned int text_flags, unsigned int rs_flags)
+{
+    G_ScreenText(MF_Bluefont.tilenum, x<<16, y<<16, zoom, 0, 0, text, shade, pal, rs_flags|RS_AUTO|RS_NOCLIP|ROTATESPRITE_FULL16, 0, tilesiz[MF_Bluefont.tilenum + 'A' - '!'].x<<16, MF_Bluefont.emptychar.y, MF_Bluefont.between.x, MF_Bluefont.between.y, text_flags, 0, 0, xdim-1, ydim-1);
+}
+
 void G_DrawStatusBar(int32_t snum)
 {
     if (REALITY && RT_DrawStatusBar(snum))
@@ -728,6 +752,120 @@ void G_DrawStatusBar(int32_t snum)
         for (TRAVERSE_CONNECT(i))
             if (i != myconnectindex)
                 sbar.frag[i] = g_player[i].ps->frag;
+    }
+
+    // [AP] Custom HUD based on alternative mini
+    if (AP)
+    {
+        int32_t hudoffset = 200;
+
+        // Health and Armor
+        rotatesprite_althud(2, hudoffset-21, sb15h, 0, COLA, 0, 0, 10+16+256);
+        if (sprite[p->i].pal == 1 && p->last_extra < 2)
+            G_DrawAltDigiNum(40, -(hudoffset-22), 1, -16, 10+16+256);
+        else if (!althud_flashing || p->last_extra >(p->max_player_health>>2) || (int32_t) totalclock&32)
+        {
+            int32_t s = -8;
+            if (althud_flashing && p->last_extra > p->max_player_health)
+                s += (sintable[((int32_t) totalclock<<5)&2047]>>10);
+            G_DrawAltDigiNum(40, -(hudoffset-22), p->last_extra, s, 10+16+256);
+        }
+
+        rotatesprite_althud(62, hudoffset-25, sb15h, 0, SHIELD, 0, 0, 10+16+256);
+        {
+            G_DrawAltDigiNum(105, -(hudoffset-22), p->inv_amount[GET_SHIELD], -16, 10+16+256);
+        }
+
+        // Inventory Items
+        o = 0;
+        for (i = 0; i < ICON_SHIELD; i++)
+        {
+            j = icon_to_inv[i];
+            if (j < 0 || p->inv_amount[j] <= 0 || item_icons[i] < 0)
+                continue;
+
+            switch(i)
+            {
+            case ICON_STEROIDS:
+                u = 1;
+                break;
+            case ICON_HOLODUKE:
+                u = 3;
+                break;
+            default:
+                u = 0;
+                break;
+
+
+            }
+
+            rotatesprite_althud(134 + o + u, hudoffset-21-2, sb16, 0, item_icons[i], 0, 0, RS_AUTO|RS_NOCLIP|RS_ALIGN_L|RS_TOPLEFT);
+            if (i == p->inven_icon)
+                // Draw selection border
+                rotatesprite_althud(130 + o, hudoffset-25, sb16, 0, ARROW, 0, 0, RS_AUTO|RS_NOCLIP|RS_ALIGN_L|RS_TOPLEFT);
+            char inv_buf[5] = {0};
+            Bsnprintf(inv_buf, 8, "%4u", G_GetInvAmountId(p, i));
+            G_DrawAPString(64+((o*75)/100), hudoffset-2, inv_buf, 0, i == p->inven_icon ? 11 : 12, 3<<13, TEXT_XRIGHT|TEXT_YBOTTOM, 0);
+            
+            o += 22;
+        }
+
+        // Show ability lock items
+        o=132;
+
+        if (!(ap_can_dive()))
+        {
+            rotatesprite_althudr(o, hudoffset-22, sb15, 0, AP_NO_DIVE, 0, 0, 10+16+512);
+            o += 18;
+        }
+        if (!(ap_can_run()))
+        {
+            rotatesprite_althudr(o, hudoffset-22, sb15, 0, AP_NO_SPRINT, 0, 0, 10+16+512);
+            o += 18;
+        }
+        if (!(ap_can_crouch()))
+        {
+            rotatesprite_althudr(o, hudoffset-22, sb15, 0, AP_NO_CROUCH, 0, 0, 10+16+512);
+            o += 18;
+        }
+        if (!(ap_can_jump()))
+        {
+            rotatesprite_althudr(o, hudoffset-22, sb15, 0, AP_NO_JUMP, 0, 0, 10+16+512);
+            o += 18;
+        }
+
+        // Show access cards
+        if (p->got_access&1) rotatesprite_althudr(113, hudoffset-22, sb15, 0, ACCESSCARD, 0, 0, 10+16+512);
+        if (p->got_access&4) rotatesprite_althudr(108, hudoffset-20, sb15, 0, ACCESSCARD, 0, 23, 10+16+512);
+        if (p->got_access&2) rotatesprite_althudr(103, hudoffset-18, sb15, 0, ACCESSCARD, 0, 21, 10+16+512);
+
+        // Big display for equipped weapon
+        if (ap_ammo_sprites[p->curr_weapon] >= 0)
+        {
+            i = (tilesiz[ap_ammo_sprites[p->curr_weapon]].y >= 50) ? 16384 : 32768;
+            rotatesprite_althudr(57, hudoffset-15, sbarsc(i), 0, ap_ammo_sprites[p->curr_weapon], 0, 0, 10+512);
+        }
+        if (p->curr_weapon== HANDREMOTE_WEAPON) i = HANDBOMB_WEAPON;
+        else i = p->curr_weapon;
+        if (p->curr_weapon != KNEE_WEAPON &&
+            (!althud_flashing || (int32_t) totalclock&32 || p->ammo_amount[i] > (p->max_ammo_amount[i]/10)))
+            G_DrawAltDigiNum(-20, -(hudoffset-22), p->ammo_amount[i], -16, 10+16+512);
+
+        // Then draw ammo amounts for all unlocked weapons
+        o = 0;
+        for(i = MAX_WEAPONS; i > 0; i--)
+        {
+            if (p->gotweapon & (1 << i) && p->max_ammo_amount[i] > 0)
+            {
+                char ammo_buf[10] = {0};
+                Bsnprintf(ammo_buf, 8, "%4u/%-4u", p->ammo_amount[i], p->max_ammo_amount[i]);
+                G_DrawAPString(318, 180-(4*o), ammo_buf, 0, (i == p->curr_weapon || (p->curr_weapon == HANDREMOTE_WEAPON__STATIC && i == HANDBOMB_WEAPON__STATIC)) ? 11 : 12, 3<<13, TEXT_XRIGHT|TEXT_YBOTTOM, RS_ALIGN_R);
+                if (ap_weapon_sprites[i] > 0)
+                    rotatesprite_(290<<16, (180-(4*(o+1)))<<16, 3<<11, 0, ap_weapon_sprites[i], 0, 0, RS_AUTO|RS_NOCLIP|RS_ALIGN_R, 0, 0, 0, 0, xdim - 1, ydim - 1);
+                o++;
+            }
+        }
+        return;
     }
 
     if (ss == 4)   //DRAW MINI STATUS BAR:

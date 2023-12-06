@@ -787,6 +787,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define AP_ITEM__STATIC 5120
 #define AP_PROG__STATIC 5140
 #define AP_PROCESSOR__STATIC 5200
+#define AP_NO_JUMP__STATIC 5210
+#define AP_NO_CROUCH__STATIC 5211
+#define AP_NO_SPRINT__STATIC 5212
+#define AP_NO_DIVE__STATIC 5213
 
 #define SECTOREFFECTOR__STATICRR -1
 #define ACTIVATOR__STATICRR -2
@@ -3620,6 +3624,10 @@ extern int32_t MAMAJIBB;
 extern int32_t AP_ITEM;
 extern int32_t AP_PROG;
 extern int32_t AP_PROCESSOR;
+extern int32_t AP_NO_JUMP;
+extern int32_t AP_NO_CROUCH;
+extern int32_t AP_NO_SPRINT;
+extern int32_t AP_NO_DIVE;
 
 #define DYNAMICTILEMAP(Tilenum) (DynamicTileMap[Tilenum])
 

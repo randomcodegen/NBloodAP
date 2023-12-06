@@ -810,6 +810,10 @@ bool ap_process_periodic(void)
 {
     bool reset_game = false;
 
+    // Force HUD settings. Not nice, clean up in the future when we can support custom hud on all settings
+    ud.screen_size = 4;
+    ud.althud = 1;
+
     // Peek item queue and process stuff we already can while not in game
     if (!(ACTIVE_PLAYER->gm & MODE_GAME))
     {
@@ -928,6 +932,8 @@ void ap_load_dynamic_player_data()
     int selected_inv = json_get_int(player_data["selected_inv"], -1);
     if (selected_inv >= 0)
         force_set_inventory_item(selected_inv);
+
+    ACTIVE_PLAYER->player_par = json_get_int(player_data["time"], 0);
 }
 
 void ap_store_dynamic_player_data(void)
@@ -962,6 +968,8 @@ void ap_store_dynamic_player_data(void)
 
     new_player_data["curr_weapon"] = Json::Int(ACTIVE_PLAYER->curr_weapon);
     new_player_data["selected_inv"] = Json::Int(icon_to_inv[ACTIVE_PLAYER->inven_icon]);
+
+    new_player_data["time"] = Json::Int(ACTIVE_PLAYER->player_par);
 
     ap_game_state.dynamic_player["player"] = new_player_data;
     // Mark our save state as to be synced
