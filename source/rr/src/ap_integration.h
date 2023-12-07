@@ -17,7 +17,6 @@ extern void ap_process_game_tic(void);
 extern void ap_check_secret(int16_t sectornum);
 extern void ap_level_end(void);
 extern void ap_check_exit(int16_t exitnum);
-extern void ap_select_episode(uint8_t i);
 extern void ap_select_level(uint8_t i);
 extern std::string ap_format_map_id(uint8_t level_number, uint8_t volume_number);
 extern void ap_remaining_items(uint16_t* collected, uint16_t* total);

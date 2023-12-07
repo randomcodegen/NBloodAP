@@ -192,6 +192,7 @@ typedef enum MenuEntryType_t
 #endif
     String,
     Spacer,
+    AP_Level,
 } MenuEntryType_t;
 
 typedef struct MenuEntryFormat_t

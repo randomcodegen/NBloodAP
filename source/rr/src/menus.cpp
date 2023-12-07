@@ -35,6 +35,18 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 static void ap_init_menu(void);
 static void ap_menu_prepare_level_list(void);
 static void ap_menu_set_level_enabled(void);
+static vec2_t Menu_Text(int32_t x, int32_t y, const MenuFont_t *font, const char *t, uint8_t status, int32_t ydim_upper, int32_t ydim_lower);
+
+enum MenuTextFlags_t
+{
+    MT_Selected = 1<<0,
+    MT_Disabled = 1<<1,
+    MT_XCenter  = 1<<2,
+    MT_XRight   = 1<<3,
+    MT_YCenter  = 1<<4,
+    MT_Literal  = 1<<5,
+    MT_RightSide = 1<<6,
+};
 
 #include "in_android.h"
 #ifndef __ANDROID__
@@ -511,7 +523,7 @@ static MenuEntry_t *MEL_EPISODE[MAXVOLUMES+2]; // +2 for spacer and User Map
 
 // [AP] Level Select menu templates for archipelago
 static MenuLink_t MEO_LEVEL = { MENU_SKILL, MA_Advance, };
-static MenuEntry_t ME_LEVEL_TEMPLATE = MAKE_MENUENTRY(NULL, &MF_Redfont, &MEF_CenterMenu, &MEO_LEVEL, Link);
+static MenuEntry_t ME_LEVEL_TEMPLATE = MAKE_MENUENTRY(NULL, &MF_Bluefont, &MEF_SmallOptions, &MEO_NULL, AP_Level);
 static MenuEntry_t ME_LEVEL[MAXLEVELS];
 static MenuEntry_t *MEL_LEVEL[MAXLEVELS];
 
@@ -1667,7 +1679,7 @@ static MenuMenu_t M_DHWEAPON = MAKE_MENUMENU( NoTitle, &MMF_Top_Skill, MEL_DHWEA
 static MenuPanel_t M_DHTROPHIES = { NoTitle, MENU_NULL, MA_Return, MENU_NULL, MA_Advance, };
 
 // [AP] AP related menus
-static MenuMenu_t M_LEVEL = MAKE_MENUMENU("Select Level", &MMF_Top_Skill, MEL_LEVEL);  // ToDo Formatting
+static MenuMenu_t M_LEVEL = MAKE_MENUMENU("Select Level", &MMF_SmallOptions, MEL_LEVEL);
 
 #ifdef EDUKE32_SIMPLE_MENU
 static MenuPanel_t M_STORY = { NoTitle, MENU_STORY, MA_Return, MENU_STORY, MA_Advance, };
@@ -1860,7 +1872,7 @@ static Menu_t Menus[] = {
     { &M_DHWEAPON, MENU_DHWEAPON, MENU_PREVIOUS, MA_Return, Menu },
     { &M_DHTROPHIES, MENU_DHTROPHIES, MENU_MAIN, MA_Return, Panel },
     // [AP] AP related Menus
-    { &M_LEVEL, MENU_AP_LEVEL, MENU_EPISODE, MA_Return, Menu },
+    { &M_LEVEL, MENU_AP_LEVEL, MENU_MAIN, MA_None, Menu },
 };
 
 static CONSTEXPR const uint16_t numMenus = ARRAY_SIZE(Menus);
@@ -3933,6 +3945,68 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
         break;
         break;
 
+    case MENU_AP_LEVEL:
+        for (i = 0; i < ap_active_levels[ud.m_volume_number].size(); i++)
+        {
+            std::string level_id = ap_format_map_id(ap_active_levels[ud.m_volume_number][i], ud.m_volume_number);
+            unsigned int sprites_col = 0, sprites_max = 0;
+            unsigned int sectors_col = 0, sectors_max = 0;
+            unsigned int exits_col = 0, exits_max = 0;
+            for (std::string sprite_str : ap_game_config["locations"][level_id]["sprites"].getMemberNames())
+            {
+                ap_location_t pickup_loc = ap_game_config["locations"][level_id]["sprites"][sprite_str]["id"].asInt();
+                if (pickup_loc > 0 && AP_LOCATION_CHECK_MASK(pickup_loc, (AP_LOC_PICKUP | AP_LOC_USED)))
+                {
+                    sprites_max++;
+                    if (AP_LOCATION_CHECKED(pickup_loc)) sprites_col++;
+                }
+            }
+            for (std::string sector_str : ap_game_config["locations"][level_id]["sectors"].getMemberNames())
+            {
+                ap_location_t secret_loc = ap_game_config["locations"][level_id]["sectors"][sector_str]["id"].asInt();
+                if (secret_loc > 0 && AP_LOCATION_CHECK_MASK(secret_loc, (AP_LOC_SECRET | AP_LOC_USED)))
+                {
+                    sectors_max++;
+                    if (AP_LOCATION_CHECKED(secret_loc)) sectors_col++;
+                }
+            }
+            for (std::string exit_str : ap_game_config["locations"][level_id]["exits"].getMemberNames())
+            {
+                ap_location_t exit_loc = ap_game_config["locations"][level_id]["exits"][exit_str]["id"].asInt();
+                if (exit_loc > 0 && AP_LOCATION_CHECK_MASK(exit_loc, (AP_LOC_EXIT | AP_LOC_USED)))
+                {
+                    exits_max++;
+                    if (AP_LOCATION_CHECKED(exit_loc)) exits_col++;
+                }
+            }
+            // ToDo this seems slow, but whatever for now
+            uint8_t key_flags = 0;
+            for(auto col_item: ap_game_state.persistent)
+            {
+                Json::Value &item_info = ap_item_info[col_item.first];
+                if (col_item.second > 0 && item_info["type"].asString() == "key" && (item_info["volumenum"].asInt() == ud.m_volume_number) && (item_info["levelnum"].asInt() == ap_active_levels[ud.m_volume_number][i]))
+                {
+                    // Key for current level
+                    key_flags |= item_info["flags"].asInt();
+                }
+            }
+            unsigned int y_pos = M_LEVEL.format->pos.y + i*(ME_LEVEL[i].getHeight() + ME_LEVEL[i].getMarginBottom());
+            // Draw key card symbols
+            if (key_flags&1) rotatesprite_fs(180<<16, y_pos + (3 << 15), 12288, 0, ACCESSCARD, 0, 0, 10+16+512);
+            if (key_flags&4) rotatesprite_fs(178<<16, y_pos + (2 << 15), 12288, 0, ACCESSCARD, 0, 23, 10+16+512);
+            if (key_flags&2) rotatesprite_fs(176<<16, y_pos + (1 << 15), 12288, 0, ACCESSCARD, 0, 21, 10+16+512);
+
+            char tempbuf[10] = {0};
+            Bsnprintf(tempbuf, 8, "%4u/%-4u", sprites_col + sectors_col + exits_col, sprites_max + sectors_max + exits_max);
+            unsigned int level_status = 0;
+            if (i == M_LEVEL.currentEntry)
+                level_status |= MT_Selected;
+            if (ME_LEVEL[i].flags & (MEF_Disabled|MEF_LookDisabled))
+                level_status |= MT_Disabled;
+            Menu_Text(240<<16, y_pos, ME_LEVEL[i].font, tempbuf, level_status, 0, ydim-1);
+        }
+        break;
+
     default:
         break;
     }
@@ -4194,8 +4268,6 @@ static void Menu_EntryLinkActivate(MenuEntry_t *entry)
                     break;
                 }
             }
-            else if(AP)
-                ap_select_episode(M_EPISODE.currentEntry);
             else
             {
                 ud.m_volume_number = M_EPISODE.currentEntry;
@@ -5791,17 +5863,6 @@ static void Menu_BlackRectangle(int32_t x, int32_t y, int32_t width, int32_t hei
 
     rotatesprite_(x, y, max(xscale, yscale), 0, 0, 127, ud.shadow_pal, (orientation&(1|32))|2|8|16, 0, 0, xdim_from_320_16(x), ydim_from_200_16(y), xdim_from_320_16(x + width), ydim_from_200_16(y + height));
 }
-
-enum MenuTextFlags_t
-{
-    MT_Selected = 1<<0,
-    MT_Disabled = 1<<1,
-    MT_XCenter  = 1<<2,
-    MT_XRight   = 1<<3,
-    MT_YCenter  = 1<<4,
-    MT_Literal  = 1<<5,
-    MT_RightSide = 1<<6,
-};
 
 static void Menu_GetFmt(const MenuFont_t *font, uint8_t const status, int32_t *s)
 {
@@ -7730,6 +7791,29 @@ static void Menu_RunInput_FileSelect_Select(MenuFileSelect_t *object)
     }
 }
 
+int ap_selected_episode = 0;
+
+static void Menu_RunInput_AP_Level(MenuMovement_t direction)
+{
+    // Only have one episode, nothing to switch between
+    if (ap_active_episodes.size() == 1) return;
+
+    if (direction == MM_Left)
+    {
+        ap_selected_episode--;
+    }
+    else if (direction == MM_Right)
+    {
+        ap_selected_episode++;
+    }
+    if (ap_selected_episode < 0)
+        ap_selected_episode = ap_active_episodes.size() - 1;
+    if (ap_selected_episode >= ap_active_episodes.size())
+        ap_selected_episode = 0;
+    ud.m_volume_number = ap_active_episodes[ap_selected_episode];
+    ap_menu_prepare_level_list();
+}
+
 static void Menu_RunInput(Menu_t *cm)
 {
     switch (cm->type)
@@ -8350,6 +8434,33 @@ static void Menu_RunInput(Menu_t *cm)
 
                         break;
                     }
+                    case AP_Level:
+                        
+                        if (I_MenuLeft())
+                        {
+                            I_MenuLeftClear();
+
+                            Menu_RunInput_AP_Level(MM_Left);
+
+                            S_PlaySound(RR ? 335 : KICK_HIT);
+                        }
+                        else if (I_MenuRight())
+                        {
+                            I_MenuRightClear();
+
+                            Menu_RunInput_AP_Level(MM_Right);
+
+                            S_PlaySound(RR ? 335 : KICK_HIT);
+                        }
+                        else if (currentry->flags & MEF_Disabled)
+                            break;
+                        else if (I_AdvanceTrigger())
+                        {
+                            I_AdvanceTriggerClear();
+
+                            Menu_RunInput_EntryLink_Activate(currentry);
+                        }
+                        break;
                 }
 
                 if (I_ReturnTrigger() || I_EscapeTrigger() || Menu_RunInput_MouseReturn())
@@ -8641,38 +8752,20 @@ void M_DisplayMenus(void)
 // [AP] Menu implementations. Need to do this here because of static linkage
 void ap_init_menu(void)
 {
-    // This is spicy, we modify the default menu structure in wild ways now!
-    // Point episodes menu to intermediary level select menu
-    for (int i = 0; i < numMenus; i++) {
-        if (Menus[i].menuID == MENU_SKILL)
-            Menus[i].parentID = MENU_AP_LEVEL;
-    }
-    // Update episode list to known episodes
-    for (unsigned int i=0; i < ap_active_episodes.size(); i++) {
-        ME_EPISODE[i].name = ap_episode_names[ap_active_episodes[i]].c_str();
-    }
-    // This might leak some memory, but it happens once so I don't care
-    for (size_t i = ap_active_episodes.size(); i < MAXVOLUMES; i++) {
-        Bmemset(&ME_EPISODE[i], 0 , sizeof(MenuEntry_t));
-    }
-    M_EPISODE.numEntries = ap_active_episodes.size();
-    MEO_EPISODE.linkID = MENU_AP_LEVEL;
     // Update display text
     ME_MAIN_NEWGAME.name = s_AP_SelectEpisode;
     ME_MAIN_NEWGAME_INGAME.name = s_AP_SelectEpisode;
-    MEO_MAIN_NEWGAME_INGAME.linkID = MENU_EPISODE;
-
-    // If we only have one episode, skip the episode selection screen
-    if (ap_active_episodes.size() < 2)
-    {
-        MEO_MAIN_NEWGAME.linkID = MENU_AP_LEVEL;
-        MEO_MAIN_NEWGAME_INGAME.linkID = MENU_AP_LEVEL;
-        ud.m_volume_number = ap_active_episodes[0];
-    }
+    MEO_MAIN_NEWGAME.linkID = MENU_AP_LEVEL;
+    MEO_MAIN_NEWGAME.animation = MA_None;
+    MEO_MAIN_NEWGAME_INGAME.linkID = MENU_AP_LEVEL;
+    MEO_MAIN_NEWGAME_INGAME.animation = MA_None;
+    ud.m_volume_number = ap_active_episodes[0];
 }
 
 void ap_menu_prepare_level_list()
 {
+    // Switch Title
+    M_LEVEL.title = ap_episode_names[ap_selected_episode].c_str();
     // Get active level count for episode
     M_LEVEL.numEntries = ap_active_levels[ud.m_volume_number].size();
     // Update level list for selected episode

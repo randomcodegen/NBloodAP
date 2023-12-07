@@ -1043,11 +1043,6 @@ void ap_check_exit(int16_t exitnum)
     AP_CheckLocation(exit_location);
 }
 
-void ap_select_episode(uint8_t i)
-{
-    ud.m_volume_number = ap_active_episodes[i];
-}
-
 void ap_select_level(uint8_t i)
 {
     ud.m_level_number = ap_active_levels[ud.m_volume_number][i];
