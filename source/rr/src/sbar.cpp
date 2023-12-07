@@ -692,7 +692,7 @@ TRIPBOMBSPRITE__STATIC, FREEZESPRITE__STATIC+1, -1, GROWSPRITEICON__STATIC
 
 static void G_DrawAPString(unsigned int x, unsigned int y, char* text, unsigned int shade, unsigned int pal, unsigned int zoom, unsigned int text_flags, unsigned int rs_flags)
 {
-    G_ScreenText(MF_Bluefont.tilenum, x<<16, y<<16, zoom, 0, 0, text, shade, pal, rs_flags|RS_AUTO|RS_NOCLIP|ROTATESPRITE_FULL16, 0, tilesiz[MF_Bluefont.tilenum + 'A' - '!'].x<<16, MF_Bluefont.emptychar.y, MF_Bluefont.between.x, MF_Bluefont.between.y, text_flags, 0, 0, xdim-1, ydim-1);
+    G_ScreenText(MF_Bluefont.tilenum, x, y, zoom, 0, 0, text, shade, pal, rs_flags|RS_AUTO|RS_NOCLIP|ROTATESPRITE_FULL16, 0, tilesiz[MF_Bluefont.tilenum + 'A' - '!'].x<<16, MF_Bluefont.emptychar.y, MF_Bluefont.between.x, MF_Bluefont.between.y, text_flags, 0, 0, xdim-1, ydim-1);
 }
 
 void G_DrawStatusBar(int32_t snum)
@@ -805,7 +805,7 @@ void G_DrawStatusBar(int32_t snum)
                 rotatesprite_althud(130 + o, hudoffset-25, sb16, 0, ARROW, 0, 0, RS_AUTO|RS_NOCLIP|RS_ALIGN_L|RS_TOPLEFT);
             char inv_buf[5] = {0};
             Bsnprintf(inv_buf, 8, "%4u", G_GetInvAmountId(p, i));
-            G_DrawAPString(64+((o*75)/100), hudoffset-2, inv_buf, 0, i == p->inven_icon ? 11 : 12, 3<<13, TEXT_XRIGHT|TEXT_YBOTTOM, 0);
+            G_DrawAPString(sbarx(152+o), sbary(hudoffset-4), inv_buf, 0, i == p->inven_icon ? 11 : 12, sb15, TEXT_XRIGHT|TEXT_YBOTTOM, RS_ALIGN_L|RS_TOPLEFT);
             
             o += 22;
         }
@@ -859,7 +859,7 @@ void G_DrawStatusBar(int32_t snum)
             {
                 char ammo_buf[10] = {0};
                 Bsnprintf(ammo_buf, 8, "%4u/%-4u", p->ammo_amount[i], p->max_ammo_amount[i]);
-                G_DrawAPString(318, 180-(4*o), ammo_buf, 0, (i == p->curr_weapon || (p->curr_weapon == HANDREMOTE_WEAPON__STATIC && i == HANDBOMB_WEAPON__STATIC)) ? 11 : 12, 3<<13, TEXT_XRIGHT|TEXT_YBOTTOM, RS_ALIGN_R);
+                G_DrawAPString(318<<16, (180-(4*o))<<16, ammo_buf, 0, (i == p->curr_weapon || (p->curr_weapon == HANDREMOTE_WEAPON__STATIC && i == HANDBOMB_WEAPON__STATIC)) ? 11 : 12, 3<<13, TEXT_XRIGHT|TEXT_YBOTTOM, RS_ALIGN_R);
                 if (ap_weapon_sprites[i] > 0)
                     rotatesprite_(290<<16, (180-(4*(o+1)))<<16, 3<<11, 0, ap_weapon_sprites[i], 0, 0, RS_AUTO|RS_NOCLIP|RS_ALIGN_R, 0, 0, 0, 0, xdim - 1, ydim - 1);
                 o++;
