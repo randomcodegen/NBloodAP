@@ -31,6 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "osd.h"
 #include "crc32.h"
+#include "ap_integration.h"
 
 #define LINE_NUMBER (g_lineNumber << 12)
 
@@ -2922,6 +2923,8 @@ void C_Compile(const char *fileName)
     g_totalLines += g_lineNumber;
 
     C_SetScriptSize(g_scriptPtr-apScript+8);
+
+    ap_con_hook();
 
     initprintf("Script compiled in %dms, %ld bytes%s\n", timerGetTicks() - startcompiletime,
                 (unsigned long)(g_scriptPtr-apScript), C_ScriptVersionString(g_scriptVersion));

@@ -8875,6 +8875,11 @@ MAIN_LOOP_RESTART:
                 g_gameUpdateAndDrawTime = timerGetFractionalTicks()-gameUpdateStartTime;
             }
 
+            // [AP] Periodic processing outside of game mode
+            if (AP)
+                if (ap_process_periodic())
+                    goto MAIN_LOOP_RESTART;
+
             frameJustDrawn = true;
 
             if (DEER)

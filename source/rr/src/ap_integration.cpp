@@ -14,6 +14,8 @@
 #include "menus.h"
 // For victory check
 #include "screens.h"
+// For sounds
+#include "soundefs.h"
 
 uint8_t ap_return_to_menu = 0;
 
@@ -770,6 +772,23 @@ static void ap_get_item(ap_net_id_t item_id, bool silent, bool is_new)
                 ACTIVE_PLAYER->inv_amount[GET_SHIELD] = ACTIVE_PLAYER->max_shield_amount;
         }
     }
+    else if (item_type == "trap")
+    {
+        Json::Value& trap_state = ap_game_state.dynamic_player["traps"][std::to_string(item_id)];
+        if (!trap_state.isObject())
+        {
+            // New trap type, initialize
+            trap_state["id"] = Json::UInt64(item_id);
+            trap_state["count"] = Json::UInt64(1);
+            trap_state["remaining"] = Json::UInt64(0);
+            trap_state["grace"] = Json::UInt64(0);
+        }
+        else
+        {
+            // Just increment the queue trap count
+            trap_state["count"] = trap_state["count"].asInt() + 1;
+        }
+    }
 }
 
 void process_message_queue()
@@ -790,15 +809,151 @@ void process_message_queue()
     }
 }
 
+static double credits_trap_end = 0;
+int ap_velocity_modifier = 1;
+int32_t pshrinking_label_code = 0;
+
+void ap_handle_trap(Json::Value& trap_info, bool triggered)
+{
+    if (triggered)
+        AP_QueueMessage("^10" + trap_info["name"].asString() + "^12 triggered!");
+
+    // Process supported trap types
+    std::string trap_type = trap_info["trap"].asString();
+    if (trap_type == "celebrate")
+    {
+        // 1 in 25 chance to start a new fist pump each frame
+        if (ACTIVE_PLAYER->fist_incs == 0 && (krand2() % 25 == 0))
+        {
+            ACTIVE_PLAYER->fist_incs = 1;
+            switch (krand2()%6)
+            {
+            case 0:
+                A_PlaySound(BONUS_SPEECH1, ACTIVE_PLAYER->i);
+                break;
+            case 1:
+                A_PlaySound(BONUS_SPEECH4, ACTIVE_PLAYER->i);
+                break;
+            case 2:
+                A_PlaySound(JIBBED_ACTOR6, ACTIVE_PLAYER->i);
+                break;
+            case 3:
+                A_PlaySound(JIBBED_ACTOR5, ACTIVE_PLAYER->i);
+                break;
+            case 4:
+                A_PlaySound(JIBBED_ACTOR2, ACTIVE_PLAYER->i);
+                break;
+            case 5:
+                A_PlaySound(YIPPEE1, ACTIVE_PLAYER->i);
+                break;
+            }
+        }
+    }
+    else if (trap_type == "credits" && triggered)
+    {
+        // Go look at the credits for some time
+        credits_trap_end = timerGetFractionalTicks() + trap_info["duration"].asDouble()*1000/REALGAMETICSPERSEC;
+    }
+    else if (trap_type == "hyperspeed")
+    {
+        // Good Luck
+        ap_velocity_modifier = 6;
+    }
+    else if (trap_type == "death" && triggered)
+    {
+        P_QuickKill(ACTIVE_PLAYER);
+    }
+    else if (trap_type == "shrink")
+    {
+        // All of the shrinking code is handled in the game CON script, try to inject stuff to there
+        if (actor[ACTIVE_PLAYER->i].t_data[1] != pshrinking_label_code)
+        {
+            actor[ACTIVE_PLAYER->i].t_data[0] = 0;
+            actor[ACTIVE_PLAYER->i].t_data[1] = pshrinking_label_code;
+        }
+        else if (actor[ACTIVE_PLAYER->i].t_data[0] > 268)
+        {
+            actor[ACTIVE_PLAYER->i].t_data[0] = 268;
+        }
+    }
+    else if (trap_type == "spawn" && triggered)
+    {
+        int i, j;
+        for (i = 0; i < trap_info["amount"].asInt(); i++)
+        {
+            j = A_Spawn(ACTIVE_PLAYER->i, trap_info["sprite"].asInt());
+            // ToDo find a valid nearby location instead of a random nearby spot
+            sprite[j].x += (krand2() % 8192) - 4096;
+            sprite[j].y += (krand2() % 8192) - 4096;
+        }
+    }
+}
+
 // Called from an actor in game, ensures we are in a valid game state and an in game tic has expired since last call
 void ap_process_game_tic(void)
 {
+    // Ensure we don't have a velocity modifier unless something actively changes it for the current tic
+    ap_velocity_modifier = 1;
+
     // Check for items in our queue to process
     while (!ap_game_state.ap_item_queue.empty())
     {
         auto queue_item = ap_game_state.ap_item_queue.front();
         ap_game_state.ap_item_queue.erase(ap_game_state.ap_item_queue.begin());
         ap_get_item(queue_item.first, !queue_item.second, true);
+    }
+
+    // Check for outstanding or active traps
+    for (std::string trap_str : ap_game_state.dynamic_player["traps"].getMemberNames())
+    {
+        // Fetch relevant trap information for this trap type
+        Json::Value& trap_state = ap_game_state.dynamic_player["traps"][trap_str];
+        ap_net_id_t trap_id = trap_state["id"].asUInt64();
+        Json::Value& trap_info = ap_item_info[trap_id];
+        if (!ap_game_settings["dynamic"][trap_str].isNull())
+            trap_info = ap_game_settings["dynamic"][trap_str];
+
+        bool triggered = false;
+        bool active = false;
+        uint32_t remaining = trap_state["remaining"].asUInt64();
+        if (remaining > 1)
+        {
+            remaining--;
+            trap_state["remaining"] = remaining;
+            active = true;
+        }
+        else if (remaining == 1)
+        {
+            // Disable trap and set a grace period
+            trap_state["remaining"] = 0;
+            // Disable for testing trap_state["grace"] = trap_info["grace"];
+            active = false;
+        }
+        
+        if (!active)
+        {
+            uint32_t grace = trap_state["grace"].asUInt64();
+            uint32_t count = trap_state["count"].asUInt64();
+            if (grace > 0)
+            {
+                grace--;
+                trap_state["grace"] = grace;
+            }
+            else if (count > 0)
+            {
+                // Trigger new trap instance
+                trap_state["remaining"] = trap_info["duration"];
+                count--;
+                trap_state["count"] = count;
+                triggered = true;
+                active = true;
+            }
+        }
+
+        if (active)
+        {
+            ap_handle_trap(trap_info, triggered);
+        }
     }
 
     // Process outstanding messages to quote at the player
@@ -821,9 +976,9 @@ bool ap_process_periodic(void)
         {
             Json::Value item_info = ap_item_info[iter->first];
 
-            // If it's a silent item or a map unlock, process them outside the game
-            // already
-            if (!iter->second || item_info["type"].asString() == "map")
+            // If it's a silent item or a map unlock or trap, process them outside the game
+            // already. Handling traps here ensures we don't lose them during sessions
+            if (!iter->second || item_info["type"].asString() == "map" || item_info["type"].asString() == "trap")
             {
                 ap_get_item(iter->first, true, true);
                 // And then remove the entry from the queue
@@ -831,6 +986,54 @@ bool ap_process_periodic(void)
             }
             else iter++;
         }
+    }
+
+    // Handle credits trap, as we can't count on in-game tics in the menu
+    if (credits_trap_end > timerGetFractionalTicks())
+    {
+        switch(m_currentMenu->menuID)
+        {
+        case MENU_CREDITS:
+        case MENU_CREDITS2:
+        case MENU_CREDITS3:
+        case MENU_CREDITS4:
+        case MENU_CREDITS5:
+        case MENU_CREDITS6:
+        case MENU_CREDITS7:
+        case MENU_CREDITS8:
+        case MENU_CREDITS9:
+        case MENU_CREDITS10:
+        case MENU_CREDITS11:
+        case MENU_CREDITS12:
+        case MENU_CREDITS13:
+        case MENU_CREDITS14:
+        case MENU_CREDITS15:
+        case MENU_CREDITS16:
+        case MENU_CREDITS17:
+        case MENU_CREDITS18:
+        case MENU_CREDITS19:
+        case MENU_CREDITS20:
+        case MENU_CREDITS21:
+        case MENU_CREDITS22:
+        case MENU_CREDITS23:
+        case MENU_CREDITS24:
+        case MENU_CREDITS25:
+        case MENU_CREDITS26:
+        case MENU_CREDITS27:
+        case MENU_CREDITS28:
+        case MENU_CREDITS29:
+        case MENU_CREDITS30:
+        case MENU_CREDITS31:
+        case MENU_CREDITS32:
+        case MENU_CREDITS33:
+            // good boy
+            break;
+        default:
+            Menu_Change(MENU_CREDITS);
+            break;
+        }
+        if(!(ACTIVE_PLAYER->gm & MODE_MENU))
+            Menu_Open(myconnectindex);
     }
 
     // Sync our save status, this only does something if there are changes
@@ -884,6 +1087,8 @@ static void ap_set_default_inv(void)
     ACTIVE_PLAYER->gotweapon = 3;
     // Always have pistol ammo, and a bit more since we might have no other weapons
     ACTIVE_PLAYER->ammo_amount[PISTOL_WEAPON__STATIC] = 96;
+    if (ACTIVE_PLAYER->ammo_amount[PISTOL_WEAPON__STATIC] > ACTIVE_PLAYER->max_ammo_amount[PISTOL_WEAPON__STATIC])
+        ACTIVE_PLAYER->ammo_amount[PISTOL_WEAPON__STATIC] = ACTIVE_PLAYER->max_ammo_amount[PISTOL_WEAPON__STATIC];
 
     ability_unlocks.clear();
     if (!ap_game_settings["lock"]["crouch"].asBool())
@@ -1089,4 +1294,12 @@ void ap_remaining_items(uint16_t* collected, uint16_t* total)
             if (AP_LOCATION_CHECKED(pickup_loc)) (*collected)++;
         }
     }
+}
+
+void ap_con_hook(void)
+{
+    const char* shrink_buf = "PSHRINKING";
+    int32_t i = hash_find(&h_labels, shrink_buf);
+    if (i >= 0)
+        pshrinking_label_code = labelcode[i];
 }

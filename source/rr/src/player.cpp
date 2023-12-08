@@ -7178,11 +7178,9 @@ static int P_DoFist(DukePlayer_t *pPlayer)
 
             ud.m_level_number = ud.level_number;
         }
-        // [AP] Just stop fist pumping after a secret exit and continue on
+        // [AP] Just stop fist pumping after a while
         else if (AP)
         {
-            ap_check_exit(ud.secretlevel);
-            ud.secretlevel = 0;
             pPlayer->fist_incs = 0;
             return 0;
         }
@@ -8398,6 +8396,9 @@ check_enemy_sprite:
     const int16_t *const weaponFrame      = &pPlayer->kickback_pic;
     int                  floorZOffset     = 40;
     int const            playerShrunk     = (pSprite->yrepeat < (RR ? 8 : 32));
+
+    // [AP] Dynamic velocity modifiers
+    velocityModifier *= ap_velocity_modifier;
 
     if (pPlayer->on_crane >= 0)
         goto HORIZONLY;

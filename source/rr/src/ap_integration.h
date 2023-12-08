@@ -36,3 +36,6 @@ extern std::map<std::string, Json::Value> ap_level_data;
 extern uint8_t ap_return_to_menu;
 extern ap_connection_settings_t ap_connection_settings;
 extern std::string ap_message_str;
+
+extern int ap_velocity_modifier;
+extern void ap_con_hook(void);

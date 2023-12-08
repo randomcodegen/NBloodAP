@@ -5219,6 +5219,12 @@ void P_CheckSectors(int playerNum)
                                 ud.secretlevel = sprite[nearSprite].pal != 0;
                             else
                                 ud.secretlevel = sprite[nearSprite].pal ? sprite[nearSprite].lotag : 0;
+                            // Check exit here in AP mode because we have other sources of fist pumping
+                            if (AP)
+                            {
+                                ap_check_exit(ud.secretlevel);
+                                ud.secretlevel = 0;
+                            }
                         }
                     }
                 }
