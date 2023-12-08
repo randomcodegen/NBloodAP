@@ -879,12 +879,18 @@ void ap_handle_trap(Json::Value& trap_info, bool triggered)
     else if (trap_type == "spawn" && triggered)
     {
         int i, j;
+        int sprite_id = trap_info["sprite"].asInt();
         for (i = 0; i < trap_info["amount"].asInt(); i++)
         {
-            j = A_Spawn(ACTIVE_PLAYER->i, trap_info["sprite"].asInt());
+            j = A_Spawn(ACTIVE_PLAYER->i, sprite_id);
             // ToDo find a valid nearby location instead of a random nearby spot
             sprite[j].x += (krand2() % 8192) - 4096;
             sprite[j].y += (krand2() % 8192) - 4096;
+            // Battlelords need to be spawned with a specirfic pallette to not be the boss one
+            if (sprite_id == BOSS1__STATIC || sprite_id == BOSS1STAYPUT__STATIC)
+            {
+                sprite[j].pal = 21;
+            }
         }
     }
 }
@@ -926,7 +932,7 @@ void ap_process_game_tic(void)
         {
             // Disable trap and set a grace period
             trap_state["remaining"] = 0;
-            // Disable for testing trap_state["grace"] = trap_info["grace"];
+            trap_state["grace"] = trap_info["grace"];
             active = false;
         }
         
@@ -1043,12 +1049,14 @@ bool ap_process_periodic(void)
     // Check if we have reached all goals
     if (AP_CheckVictory())
     {
+        uint8_t old_volumenum = ud.volume_number;
         ud.volume_number = 2;
         ud.eog = 1;
         G_BonusScreen(0);
         ap_return_to_menu = 0;
         G_BackToMenu();
         reset_game = true;
+        ud.volume_number = old_volumenum;
     }
 
     return reset_game;

@@ -151,9 +151,12 @@ static void set_settings(std::string json)
     }
 }
 
+static bool reached_goal = false;
+
 static void initialize_save_data(Json::Value& init_data)
 {
     ap_game_state.dynamic_player.copy(init_data["player"]);
+    reached_goal = ap_game_state.dynamic_player["victory"].asBool();
 }
 
 int32_t AP_CheckLocation(ap_location_t loc)
@@ -360,8 +363,6 @@ void AP_SyncProgress(void)
     ap_game_state.need_sync = false;
 }
 
-static bool reached_goal = false;
-
 bool AP_CheckVictory(void)
 {
     if (reached_goal) return false; // Already reached victory state once
@@ -380,6 +381,9 @@ bool AP_CheckVictory(void)
     {
         // Send victory state to AP Server
         reached_goal = true;
+        ap_game_state.dynamic_player["victory"] = Json::booleanValue;
+        ap_game_state.dynamic_player["victory"] = true;
+        ap_game_state.need_sync = true;
         AP_StoryComplete();
     }
 
