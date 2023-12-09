@@ -35,7 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 static void ap_init_menu(void);
 static void ap_menu_prepare_level_list(void);
 static void ap_menu_set_level_enabled(void);
-static vec2_t Menu_Text(int32_t x, int32_t y, const MenuFont_t *font, const char *t, uint8_t status, int32_t ydim_upper, int32_t ydim_lower);
+static vec2_t Menu_Text(int32_t x, int32_t y, const MenuFont_t *font, const char *t, uint16_t status, int32_t ydim_upper, int32_t ydim_lower);
 
 enum MenuTextFlags_t
 {
@@ -47,6 +47,7 @@ enum MenuTextFlags_t
     MT_Literal  = 1<<5,
     MT_RightSide = 1<<6,
     MT_AP_Highlight = 1<<7,
+    MT_AP_Completed = 1<<8,
 };
 
 #include "in_android.h"
@@ -4025,7 +4026,7 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
             if (ME_LEVEL[i].flags & (MEF_Disabled|MEF_LookDisabled))
                 level_status |= MT_Disabled;
             if (goals_collected == goals_max)
-                level_status |= MT_AP_Highlight;
+                level_status |= (items_collected == items_max) ? MT_AP_Completed : MT_AP_Highlight;
             Menu_Text(240<<16, y_pos, ME_LEVEL[i].font, tempbuf, level_status, 0, ydim-1);
         }
         break;
@@ -5903,7 +5904,7 @@ static void Menu_GetFmt(const MenuFont_t *font, uint8_t const status, int32_t *s
         *s += font->shade_disabled;
 }
 
-static vec2_t Menu_Text(int32_t x, int32_t y, const MenuFont_t *font, const char *t, uint8_t status, int32_t ydim_upper, int32_t ydim_lower)
+static vec2_t Menu_Text(int32_t x, int32_t y, const MenuFont_t *font, const char *t, uint16_t status, int32_t ydim_upper, int32_t ydim_lower)
 {
     int32_t s, p, ybetween = font->between.y;
     int32_t f = font->textflags | TEXT_RRMENUTEXTHACK;
@@ -5929,6 +5930,8 @@ static vec2_t Menu_Text(int32_t x, int32_t y, const MenuFont_t *font, const char
         p = (status & MT_RightSide) ? font->pal_deselected_right : font->pal_deselected;
     if (status & MT_AP_Highlight)
         p = font->pal_selected - 2;
+    if (status & MT_AP_Completed)
+        p = font->pal_selected - 3;
 
     Menu_GetFmt(font, status, &s);
 
@@ -8798,7 +8801,7 @@ void ap_init_menu(void)
 void ap_menu_prepare_level_list()
 {
     // Switch Title
-    M_LEVEL.title = ap_episode_names[ap_selected_episode].c_str();
+    M_LEVEL.title = ap_episode_names[ud.m_volume_number].c_str();
     // Get active level count for episode
     M_LEVEL.numEntries = ap_active_levels[ud.m_volume_number].size();
     // Set cursor to correct entry if required
