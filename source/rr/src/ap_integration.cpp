@@ -85,6 +85,7 @@ static void ap_map_patch_sprites(void)
     int32_t use_sprite;
     int location_id;
     ap_location_t sprite_location;
+    std::vector<int32_t> to_delete;
     for (i = 0; i < Numsprites; i++)
     {
         sprite_info = sprite_locations[std::to_string(i)];
@@ -107,12 +108,33 @@ static void ap_map_patch_sprites(void)
         else
         {
             // Unused sprite, set it up for deletion
-            A_DeleteSprite(i);
+            to_delete.push_back(i);
         }
     }
 
+    for (auto i: to_delete)
+        A_DeleteSprite(i);
+
     // Inject an AP_PROCESSOR sprite into the map
     ap_add_processor_sprite();
+}
+
+void ap_delete_collected_sprites(void)
+{
+    std::vector<int32_t> to_delete;
+    for (int32_t i = 0; i < Numsprites; i++)
+    {
+        switch(sprite[i].picnum)
+        {
+        case AP_PROG__STATIC:
+        case AP_ITEM__STATIC:
+            if (AP_LOCATION_CHECKED(sprite[i].lotag))
+                to_delete.push_back(i);
+            break;
+        }
+    }
+    for (auto i: to_delete)
+        A_DeleteSprite(i);
 }
 
 #ifdef AP_DEBUG_ON
@@ -772,7 +794,8 @@ static void ap_get_item(ap_net_id_t item_id, bool silent, bool is_new)
                 ACTIVE_PLAYER->inv_amount[GET_SHIELD] = ACTIVE_PLAYER->max_shield_amount;
         }
     }
-    else if (item_type == "trap")
+    // Do not retrigger traps that the server has sent us before
+    else if (item_type == "trap" && !silent)
     {
         Json::Value& trap_state = ap_game_state.dynamic_player["traps"][std::to_string(item_id)];
         if (!trap_state.isObject())
@@ -986,7 +1009,7 @@ bool ap_process_periodic(void)
             // already. Handling traps here ensures we don't lose them during sessions
             if (!iter->second || item_info["type"].asString() == "map" || item_info["type"].asString() == "trap")
             {
-                ap_get_item(iter->first, true, true);
+                ap_get_item(iter->first, item_info["type"].asString() == "map" ? !iter->second : true, true);
                 // And then remove the entry from the queue
                 iter = ap_game_state.ap_item_queue.erase(iter);
             }
@@ -1230,6 +1253,7 @@ void ap_on_save_load(void)
 
     ap_mark_known_secret_sectors(true);
     ap_sync_inventory();
+    ap_delete_collected_sprites();
 }
 
 void ap_check_secret(int16_t sectornum)

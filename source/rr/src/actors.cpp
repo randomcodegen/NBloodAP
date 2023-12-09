@@ -3273,7 +3273,17 @@ default_case:
 static int P_Submerge(int const spriteNum, int const playerNum, DukePlayer_t * const pPlayer, int const sectNum, int const otherSect)
 {
     // [AP] Conditional diving only!
-    if (AP && !ap_can_dive()) return 0;
+    if (AP && !ap_can_dive()) {
+        // This looks utterly janky, but if we can't jump we simulate the same floating behaviour as if we emerged from below water
+        if(!ap_can_jump() && pPlayer->pos.z > sector[sectNum].floorz - (7<<8))
+        {
+            pPlayer->jumping_toggle = 1;
+            pPlayer->jumping_counter = 0;
+            pPlayer->opos.z = pPlayer->pos.z = sector[sectNum].floorz - (7<<8);
+            pPlayer->vel.z = 0;
+        }
+        return 0;
+    }
     if ((!RR && pPlayer->on_ground && pPlayer->pos.z > sector[sectNum].floorz - ZOFFSET2
         && (TEST_SYNC_KEY(g_player[playerNum].inputBits->bits, SK_CROUCH) || pPlayer->vel.z > 2048))
         || (RR && pPlayer->pos.z > (sector[sectNum].floorz-(6<<8))) || pPlayer->on_motorcycle)

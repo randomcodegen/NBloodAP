@@ -8768,6 +8768,9 @@ void ap_menu_prepare_level_list()
     M_LEVEL.title = ap_episode_names[ap_selected_episode].c_str();
     // Get active level count for episode
     M_LEVEL.numEntries = ap_active_levels[ud.m_volume_number].size();
+    // Set cursor to correct entry if required
+    if (M_LEVEL.currentEntry >= M_LEVEL.numEntries)
+        M_LEVEL.currentEntry = M_LEVEL.numEntries - 1;
     // Update level list for selected episode
     for (int i = 0; i < M_LEVEL.numEntries; i++)
     {
