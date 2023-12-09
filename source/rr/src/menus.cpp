@@ -5832,6 +5832,11 @@ void Menu_Open(uint8_t playerID)
     m_logosoundcnt = 0;
 
     mouseLockToWindow(0);
+
+    // [AP] stop cursed hyperspeed menu movements by resetting key states
+    KB_FlushKeyboardQueue();
+    CONTROL_ButtonState = 0;
+    CONTROL_ButtonHeldState = 0;
 }
 
 void Menu_Close(uint8_t playerID)
