@@ -8687,7 +8687,7 @@ check_enemy_sprite:
             pPlayer->on_warping_sector = 0;
 
             // [AP] Limit crouching ability, except on water surface so we can dive
-            if (TEST_SYNC_KEY(playerBits, SK_CROUCH) && (!RRRA || !pPlayer->on_motorcycle) && (!AP || ap_can_crouch() || (pPlayer->on_ground && sectorLotag == ST_1_ABOVE_WATER && pPlayer->spritebridge == 0)))
+            if (TEST_SYNC_KEY(playerBits, SK_CROUCH) && (!RRRA || !pPlayer->on_motorcycle) && (!AP || ap_can_crouch() || (sectorLotag == ST_1_ABOVE_WATER && ap_can_dive() && pPlayer->on_ground && pPlayer->spritebridge == 0)))
             {
                 // crouching
                 if (VM_OnEvent(EVENT_CROUCH,pPlayer->i,playerNum) == 0)

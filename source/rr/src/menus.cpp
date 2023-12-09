@@ -46,6 +46,7 @@ enum MenuTextFlags_t
     MT_YCenter  = 1<<4,
     MT_Literal  = 1<<5,
     MT_RightSide = 1<<6,
+    MT_AP_Highlight = 1<<7,
 };
 
 #include "in_android.h"
@@ -3949,16 +3950,20 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
         for (i = 0; i < ap_active_levels[ud.m_volume_number].size(); i++)
         {
             std::string level_id = ap_format_map_id(ap_active_levels[ud.m_volume_number][i], ud.m_volume_number);
-            unsigned int sprites_col = 0, sprites_max = 0;
-            unsigned int sectors_col = 0, sectors_max = 0;
-            unsigned int exits_col = 0, exits_max = 0;
+            unsigned int items_collected = 0, items_max = 0;
+            unsigned int goals_collected = 0, goals_max = 0;
+            bool has_boss = ap_level_data[level_id]["boss"].asBool();
+            bool goal_boss = ap_goals.count("Boss") && ap_goals["Boss"].second > 0;
+            bool goal_exit = ap_goals.count("Exit") && ap_goals["Exit"].second > 0;
+            bool goal_secret = ap_goals.count("Secret") && ap_goals["Secret"].second > 0;
+
             for (std::string sprite_str : ap_game_config["locations"][level_id]["sprites"].getMemberNames())
             {
                 ap_location_t pickup_loc = ap_game_config["locations"][level_id]["sprites"][sprite_str]["id"].asInt();
                 if (pickup_loc > 0 && AP_LOCATION_CHECK_MASK(pickup_loc, (AP_LOC_PICKUP | AP_LOC_USED)))
                 {
-                    sprites_max++;
-                    if (AP_LOCATION_CHECKED(pickup_loc)) sprites_col++;
+                    items_max++;
+                    if (AP_LOCATION_CHECKED(pickup_loc)) items_collected++;
                 }
             }
             for (std::string sector_str : ap_game_config["locations"][level_id]["sectors"].getMemberNames())
@@ -3966,8 +3971,16 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
                 ap_location_t secret_loc = ap_game_config["locations"][level_id]["sectors"][sector_str]["id"].asInt();
                 if (secret_loc > 0 && AP_LOCATION_CHECK_MASK(secret_loc, (AP_LOC_SECRET | AP_LOC_USED)))
                 {
-                    sectors_max++;
-                    if (AP_LOCATION_CHECKED(secret_loc)) sectors_col++;
+                    if (goal_secret)
+                    {
+                        goals_max++;
+                        if (AP_LOCATION_CHECKED(secret_loc)) goals_collected++;
+                    }
+                    else
+                    {
+                        items_max++;
+                        if (AP_LOCATION_CHECKED(secret_loc)) items_collected++;
+                    }
                 }
             }
             for (std::string exit_str : ap_game_config["locations"][level_id]["exits"].getMemberNames())
@@ -3975,8 +3988,16 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
                 ap_location_t exit_loc = ap_game_config["locations"][level_id]["exits"][exit_str]["id"].asInt();
                 if (exit_loc > 0 && AP_LOCATION_CHECK_MASK(exit_loc, (AP_LOC_EXIT | AP_LOC_USED)))
                 {
-                    exits_max++;
-                    if (AP_LOCATION_CHECKED(exit_loc)) exits_col++;
+                    if (goal_exit || (goal_boss && has_boss))
+                    {
+                        goals_max++;
+                        if (AP_LOCATION_CHECKED(exit_loc)) goals_collected++;
+                    }
+                    else
+                    {
+                        items_max++;
+                        if (AP_LOCATION_CHECKED(exit_loc)) items_collected++;
+                    }
                 }
             }
             // ToDo this seems slow, but whatever for now
@@ -3997,12 +4018,14 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
             if (key_flags&2) rotatesprite_fs(176<<16, y_pos + (1 << 15), 12288, 0, ACCESSCARD, 0, 21, 10+16+512);
 
             char tempbuf[10] = {0};
-            Bsnprintf(tempbuf, 8, "%4u/%-4u", sprites_col + sectors_col + exits_col, sprites_max + sectors_max + exits_max);
+            Bsnprintf(tempbuf, 8, "%4u/%-4u", items_collected, items_max);
             unsigned int level_status = 0;
             if (i == M_LEVEL.currentEntry)
                 level_status |= MT_Selected;
             if (ME_LEVEL[i].flags & (MEF_Disabled|MEF_LookDisabled))
                 level_status |= MT_Disabled;
+            if (goals_collected == goals_max)
+                level_status |= MT_AP_Highlight;
             Menu_Text(240<<16, y_pos, ME_LEVEL[i].font, tempbuf, level_status, 0, ydim-1);
         }
         break;
@@ -5899,6 +5922,8 @@ static vec2_t Menu_Text(int32_t x, int32_t y, const MenuFont_t *font, const char
         p = (status & MT_RightSide) ? font->pal_selected_right : font->pal_selected;
     else
         p = (status & MT_RightSide) ? font->pal_deselected_right : font->pal_deselected;
+    if (status & MT_AP_Highlight)
+        p = font->pal_selected - 2;
 
     Menu_GetFmt(font, status, &s);
 
@@ -8261,7 +8286,10 @@ static void Menu_RunInput(Menu_t *cm)
 
             // [AP] Update Level Select status for unlocks we receive while on a menu. Not sure if there's a better place to put this logic
             if (m_currentMenu->menuID == MENU_AP_LEVEL)
+            {
+                ap_process_periodic();
                 ap_menu_set_level_enabled();
+            }
 
             if (state == 0)
             {

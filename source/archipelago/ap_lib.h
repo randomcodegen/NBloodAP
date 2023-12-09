@@ -117,7 +117,7 @@ extern uint16_t AP_ProgressiveItem(ap_net_id_t id);
 extern int32_t AP_CheckLocation(ap_location_t loc);
 extern void AP_SyncProgress(void);  // Syncs ap_game_state to server
 
-extern std::map<ap_net_id_t, uint16_t> ap_goals;
+extern std::map<std::string, std::pair<ap_net_id_t, uint16_t>> ap_goals;
 
 extern void AP_ItemReceived(int64_t item_id, int slot, bool notify);
 extern bool AP_CheckVictory(void);  //Check if goals have been fulfilled for the first time

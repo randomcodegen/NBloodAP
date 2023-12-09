@@ -19,7 +19,7 @@ ap_state_t ap_game_state = {
 std::map<ap_net_id_t, Json::Value> ap_item_info;
 
 std::map<std::string, Json::Value> ap_game_settings;
-std::map<ap_net_id_t, uint16_t> ap_goals;
+std::map<std::string, std::pair<ap_net_id_t, uint16_t>> ap_goals;
 std::map<ap_net_id_t, uint8_t> ap_used_level_unlocks;
 
 Json::Reader ap_reader;
@@ -92,8 +92,9 @@ static void set_goals(std::string json)
     ap_goals.clear();
     for (std::string goal_str : goals.getMemberNames())
     {
-        ap_net_id_t goal_id = AP_NET_ID(std::stoll(goal_str));
-        ap_goals[goal_id] = goals[goal_str].asInt();
+        ap_net_id_t goal_id = AP_NET_ID(goals[goal_str]["id"].asUInt64());
+        uint16_t goal_count = goals[goal_str]["count"].asUInt();
+        ap_goals[goal_str] = std::make_pair(goal_id, goal_count);
     }
 }
 
@@ -370,7 +371,7 @@ bool AP_CheckVictory(void)
     for (auto pair: ap_goals)
     {
         // Check goal count
-        if (AP_ItemCount(pair.first) < pair.second)
+        if (AP_ItemCount(pair.second.first) < pair.second.second)
         {
             all_reached = false;
             break;

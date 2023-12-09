@@ -1005,11 +1005,12 @@ bool ap_process_periodic(void)
         {
             Json::Value item_info = ap_item_info[iter->first];
 
-            // If it's a silent item or a map unlock or trap, process them outside the game
+            // If it's a silent item or a map or key unlock or trap, process them outside the game
             // already. Handling traps here ensures we don't lose them during sessions
-            if (!iter->second || item_info["type"].asString() == "map" || item_info["type"].asString() == "trap")
+            std::string item_type = item_info["type"].asString();
+            if (!iter->second || item_type == "map" || item_type == "trap" || item_type == "key")
             {
-                ap_get_item(iter->first, item_info["type"].asString() == "map" ? !iter->second : true, true);
+                ap_get_item(iter->first, !iter->second, true);
                 // And then remove the entry from the queue
                 iter = ap_game_state.ap_item_queue.erase(iter);
             }
