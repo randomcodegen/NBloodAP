@@ -7353,7 +7353,8 @@ static void P_DoJetpack(int const playerNum, int const playerBits, int const pla
         }
     }
 
-    int const Zdiff = (playerShrunk == 0 && (sectorLotag == 0 || sectorLotag == ST_2_UNDERWATER)) ? 32 : 16;
+    // [AP] Prevent crouching via jetpack if not unlocked
+    int const Zdiff = (playerShrunk == 0 && (sectorLotag == 0 || sectorLotag == ST_2_UNDERWATER)) ? (ap_can_crouch() ? 32 : 40) : 16;
 
     if (sectorLotag != ST_2_UNDERWATER && pPlayer->scuba_on == 1)
         pPlayer->scuba_on = 0;
