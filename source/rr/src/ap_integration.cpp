@@ -1131,6 +1131,10 @@ static void ap_set_default_inv(void)
         ability_unlocks["jump"] = true;
     if (!ap_game_settings["lock"]["run"].asBool())
         ability_unlocks["run"] = true;
+    if (!ap_game_settings["lock"]["open"].asBool())
+        ability_unlocks["open"] = true;
+    if (!ap_game_settings["lock"]["use"].asBool())
+        ability_unlocks["use"] = true;
 }
 
 void ap_load_dynamic_player_data()
@@ -1309,6 +1313,16 @@ bool ap_can_crouch()
 bool ap_can_run()
 {
     return ability_unlocks.count("run");
+}
+
+bool ap_can_open()
+{
+    return ability_unlocks.count("open");
+}
+
+bool ap_can_use()
+{
+    return ability_unlocks.count("use");
 }
 
 bool ap_can_save()

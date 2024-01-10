@@ -5105,8 +5105,10 @@ void P_CheckSectors(int playerNum)
         {
             if (RR && !RRRA)
                 g_canSeePlayer = playerNum;
-            if (P_ActivateSwitch(playerNum, nearSprite, 1))
-                return;
+            // AP: Need Use ability to interact with switches
+            if (!AP || ap_can_use())
+                if (P_ActivateSwitch(playerNum, nearSprite, 1))
+                    return;
 
             switch (DYNAMICTILEMAP(sprite[nearSprite].picnum))
             {
@@ -5161,6 +5163,8 @@ void P_CheckSectors(int playerNum)
             case STALL__STATIC:
             case RRTILE2121__STATICRR:
             case RRTILE2122__STATICRR:
+                // AP: Seems fun to limit this ability, doesn't really affect much
+                if (AP && !ap_can_use()) break;
                 if (pPlayer->last_pissed_time == 0)
                 {
                     if (ud.lockout == 0)
@@ -5195,6 +5199,8 @@ void P_CheckSectors(int playerNum)
             case NUKEBUTTON__STATIC:
             {
                 if (RR) break;
+                // AP: Can't activate nuke buttons without Use ability
+                if (AP && !ap_can_use()) break;
                 int wallNum;
 
                 P_FindWall(pPlayer, &wallNum);
@@ -5232,6 +5238,8 @@ void P_CheckSectors(int playerNum)
             }
 
             case WATERFOUNTAIN__STATIC:
+                // AP: Seems fun to limit this ability, doesn't really affect much
+                if (AP && !ap_can_use()) break;
                 if (actor[nearSprite].t_data[0] != 1)
                 {
                     actor[nearSprite].t_data[0] = 1;
@@ -5248,6 +5256,8 @@ void P_CheckSectors(int playerNum)
                 return;
 
             case PLUG__STATIC:
+                // AP: Seems fun to limit this ability, doesn't really affect much
+                if (AP && !ap_can_use()) break;
                 if (RR && !RRRA)
                     g_canSeePlayer = -1;
                 A_PlaySound(REALITY ? 19 : SHORT_CIRCUIT, pPlayer->i);
@@ -5260,6 +5270,8 @@ void P_CheckSectors(int playerNum)
             case VIEWSCREEN2__STATIC:
             {
                 if (RR) break;
+                // AP: Seems fun to limit this ability, doesn't really affect much
+                if (AP && !ap_can_use()) break;
                 int spriteNum = (REALITY && pPlayer->newowner != -1) ? nextspritestat[pPlayer->newowner] : headspritestat[STAT_ACTOR];
                 // Try to find a camera sprite for the viewscreen.
                 for (; spriteNum >= 0; spriteNum = nextspritestat[spriteNum])
@@ -5322,7 +5334,9 @@ void P_CheckSectors(int playerNum)
                 {
                     if (RR && !RRRA)
                         g_canSeePlayer = playerNum;
-                    P_ActivateSwitch(playerNum,nearWall,0);
+                    // AP: Check if we can open doors
+                    if(!AP || ap_can_open())
+                        P_ActivateSwitch(playerNum,nearWall,0);
                 }
                 return;
             }
@@ -5346,7 +5360,9 @@ void P_CheckSectors(int playerNum)
             {
                 if (RR && !RRRA)
                     g_canSeePlayer = -1;
-                G_OperateSectors(nearSector,pPlayer->i);
+                // AP: Check if we can open doors to operate elevators and doors
+                if(!AP || ap_can_open())
+                    G_OperateSectors(nearSector,pPlayer->i);
             }
             else if (RR)
             {
@@ -5373,7 +5389,9 @@ void P_CheckSectors(int playerNum)
                 {
                     if (RR && !RRRA)
                         g_canSeePlayer = -1;
-                    G_OperateSectors(sprite[pPlayer->i].sectnum,pPlayer->i);
+                    // AP: Check if we can open doors to operate elevators and doors
+                    if(!AP || ap_can_open())
+                        G_OperateSectors(sprite[pPlayer->i].sectnum,pPlayer->i);
                 }
                 else if (RR)
                 {
@@ -5386,7 +5404,9 @@ void P_CheckSectors(int playerNum)
                     P_DoQuote(41,pPlayer);
                 }
             }
-            else P_ActivateSwitch(playerNum,nearWall,0);
+            // AP: Check if we can use switches to activate
+            else if(!AP || ap_can_open())
+                P_ActivateSwitch(playerNum,nearWall,0);
         }
     }
 }

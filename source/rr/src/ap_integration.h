@@ -25,6 +25,8 @@ extern void ap_remaining_items(uint16_t* collected, uint16_t* total);
 extern bool ap_can_dive();
 extern bool ap_can_jump();
 extern bool ap_can_run();
+extern bool ap_can_open();
+extern bool ap_can_use();
 extern bool ap_can_crouch();
 extern bool ap_can_save();
 

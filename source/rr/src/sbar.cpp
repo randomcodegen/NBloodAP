@@ -813,6 +813,16 @@ void G_DrawStatusBar(int32_t snum)
         // Show ability lock items
         o=132;
 
+        if (!(ap_can_use()))
+        {
+            rotatesprite_althudr(o, hudoffset-22, sb15, 0, AP_NO_USE, 0, 0, 10+16+512);
+            o += 18;
+        }
+        if (!(ap_can_open()))
+        {
+            rotatesprite_althudr(o, hudoffset-22, sb15, 0, AP_NO_OPEN, 0, 0, 10+16+512);
+            o += 18;
+        }
         if (!(ap_can_dive()))
         {
             rotatesprite_althudr(o, hudoffset-22, sb15, 0, AP_NO_DIVE, 0, 0, 10+16+512);

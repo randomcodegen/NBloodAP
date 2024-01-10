@@ -791,6 +791,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define AP_NO_CROUCH__STATIC 5211
 #define AP_NO_SPRINT__STATIC 5212
 #define AP_NO_DIVE__STATIC 5213
+#define AP_NO_OPEN__STATIC 5214
+#define AP_NO_USE__STATIC 5215
 
 #define SECTOREFFECTOR__STATICRR -1
 #define ACTIVATOR__STATICRR -2
@@ -3628,6 +3630,8 @@ extern int32_t AP_NO_JUMP;
 extern int32_t AP_NO_CROUCH;
 extern int32_t AP_NO_SPRINT;
 extern int32_t AP_NO_DIVE;
+extern int32_t AP_NO_OPEN;
+extern int32_t AP_NO_USE;
 
 #define DYNAMICTILEMAP(Tilenum) (DynamicTileMap[Tilenum])
 
