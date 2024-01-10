@@ -4025,7 +4025,7 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
                 level_status |= MT_Selected;
             if (ME_LEVEL[i].flags & (MEF_Disabled|MEF_LookDisabled))
                 level_status |= MT_Disabled;
-            if (goals_collected == goals_max)
+            else if (goals_collected == goals_max)
                 level_status |= (items_collected == items_max) ? MT_AP_Completed : MT_AP_Highlight;
             Menu_Text(240<<16, y_pos, ME_LEVEL[i].font, tempbuf, level_status, 0, ydim-1);
         }
