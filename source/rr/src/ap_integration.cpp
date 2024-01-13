@@ -46,10 +46,9 @@ std::string current_map = "";
 
 static void ap_add_processor_sprite(void)
 {
-    spritetype *player, *processor;
+    spritetype *processor;
     short       new_idx;
-    player  = &sprite[0];
-    new_idx = insertsprite(player->sectnum, 0);
+    new_idx = insertsprite(0, 0);
     if (new_idx < 0 || new_idx >= MAXSPRITES)
     {
         initprintf("Injecting AP Processor sprite failed\n");
