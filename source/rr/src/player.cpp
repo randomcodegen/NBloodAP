@@ -728,7 +728,8 @@ growspark_rr:
                     if (hitData.sprite >= 0 && sprite[hitData.sprite].picnum != ACCESSSWITCH && sprite[hitData.sprite].picnum != ACCESSSWITCH2)
                     {
                         A_DamageObject(hitData.sprite, kneeSprite);
-                        if (playerNum >= 0)
+                        // AP: Only allow kicks to activate switches when we could use them anyway
+                        if (playerNum >= 0 && (!AP || ap_can_use()))
                             P_ActivateSwitch(playerNum, hitData.sprite, 1);
                     }
                     else if (hitData.wall >= 0)
@@ -738,7 +739,10 @@ growspark_rr:
                         if (hitData.wall >= 0 && wall[hitData.wall].picnum != ACCESSSWITCH && wall[hitData.wall].picnum != ACCESSSWITCH2)
                         {
                             A_DamageWall(kneeSprite, hitData.wall, &hitData.xyz, projecTile);
-                            if (playerNum >= 0)
+                            // AP: Only allow kicks to activate walls when we could use them anyway
+                            // Not sure there is a legitimate use for this piece of code, but it is what causes the glitch that
+                            // allows opening some doors without the keycard
+                            if (playerNum >= 0 && (!AP || ap_can_use()))
                                 P_ActivateSwitch(playerNum, hitData.wall, 0);
                         }
                     }
