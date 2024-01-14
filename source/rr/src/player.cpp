@@ -4747,10 +4747,13 @@ static int32_t P_DoCounters(int playerNum)
 
     if ((AP ? pPlayer->steroids_on : pPlayer->inv_amount[GET_STEROIDS] > 0 && pPlayer->inv_amount[GET_STEROIDS] < 400))
     {
-        if (--pPlayer->inv_amount[GET_STEROIDS] == 0)
+        uint16_t duration = AP ? ap_steroids_duration() : 400;
+        --pPlayer->inv_amount[GET_STEROIDS];
+        if (pPlayer->inv_amount[GET_STEROIDS] % duration == 0)
         {
             pPlayer->steroids_on = 0;
-            P_SelectNextInvItem(pPlayer);
+            if (pPlayer->inv_amount[GET_STEROIDS] == 0)
+                P_SelectNextInvItem(pPlayer);
             if (RR)
             {
                 pPlayer->eat_amt = pPlayer->drink_amt = 0;

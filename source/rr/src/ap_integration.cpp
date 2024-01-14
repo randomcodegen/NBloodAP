@@ -563,6 +563,7 @@ static inline int64_t json_get_int(Json::Value& val, int64_t def)
 // Track inventory unlock state. There might be a better solution to this?
 static uint8_t inv_available[GET_MAX];
 static uint16_t inv_capacity[GET_MAX];
+static uint16_t inv_max_capacity[GET_MAX];
 static std::map<std::string, uint8_t> ability_unlocks;
 
 void force_set_player_weapon(uint8_t weaponnum)
@@ -716,10 +717,12 @@ static void ap_get_item(ap_net_id_t item_id, bool silent, bool is_new)
 
         // Add capacity
         ACTIVE_PLAYER->inv_amount[invnum] += json_get_int(item_info["capacity"], 0);
+        inv_max_capacity[invnum] += json_get_int(item_info["capacity"], 0);
         if (inv_available[invnum] == 0)
         {
             // Also use stored min capacity
             ACTIVE_PLAYER->inv_amount[invnum] += inv_capacity[invnum];
+            inv_max_capacity[invnum] += inv_capacity[invnum];
             inv_capacity[invnum] = 0;
         }
         // Mark as unlocked
@@ -751,6 +754,7 @@ static void ap_get_item(ap_net_id_t item_id, bool silent, bool is_new)
         {
             // Inventory item unlocked, just increase capacity
             ACTIVE_PLAYER->inv_amount[invnum] += json_get_int(item_info["capacity"], 0);
+            inv_max_capacity[invnum] += json_get_int(item_info["capacity"], 0);
             // Saturate
             int64_t max_capacity = json_get_int(item_info["max_capacity"], -1);
             if (max_capacity >= 0 && ACTIVE_PLAYER->inv_amount[invnum] > max_capacity)
@@ -984,6 +988,16 @@ void ap_process_game_tic(void)
         }
     }
 
+    // Check if we have regenerated a steroids charge
+    // Once every 20 seconds
+    if (ACTIVE_PLAYER->player_par % (20 * REALGAMETICSPERSEC) == 0)
+    {
+        // Only increment if there is space for a full additional charge
+        uint16_t steroid_amount = ACTIVE_PLAYER->inv_amount[GET_STEROIDS] + ap_steroids_duration();
+        if (steroid_amount <= inv_max_capacity[GET_STEROIDS])
+            ACTIVE_PLAYER->inv_amount[GET_STEROIDS] = steroid_amount;
+    }
+
     // Process outstanding messages to quote at the player
     process_message_queue();
 }
@@ -1092,6 +1106,7 @@ static void ap_set_default_inv(void)
     for (uint8_t i = 0; i < GET_MAX; i++)
     {
         inv_capacity[i] = 0;
+        inv_max_capacity[i] = 0;
         inv_available[i] = 0;
         ACTIVE_PLAYER->inv_amount[i] = 0;
     }
@@ -1348,4 +1363,13 @@ void ap_con_hook(void)
     int32_t i = hash_find(&h_labels, shrink_buf);
     if (i >= 0)
         pshrinking_label_code = labelcode[i];
+}
+
+uint16_t ap_steroids_duration(void)
+{
+    uint16_t duration = ap_game_settings["steroids_duration"].asUInt();
+    if (duration == 0)
+        // default value
+        duration = 40;
+    return duration;
 }

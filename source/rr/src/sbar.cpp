@@ -597,7 +597,7 @@ static int32_t G_GetInvAmountId(const DukePlayer_t *p, uint8_t inv_id)
     case ICON_FIRSTAID:
         return p->inv_amount[GET_FIRSTAID];
     case ICON_STEROIDS:
-        return AP ? p->inv_amount[GET_STEROIDS] : (p->inv_amount[GET_STEROIDS]+3)>>2;
+        return AP ? (p->inv_amount[GET_STEROIDS] / ap_steroids_duration()) : (p->inv_amount[GET_STEROIDS]+3)>>2;
     case ICON_HOLODUKE:
         if (RR) return AP ? p->inv_amount[GET_HOLODUKE] : p->inv_amount[GET_HOLODUKE]/400;
         return AP ? p->inv_amount[GET_HOLODUKE] : (p->inv_amount[GET_HOLODUKE]+15)/24;

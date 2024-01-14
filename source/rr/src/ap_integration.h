@@ -20,6 +20,7 @@ extern void ap_check_exit(int16_t exitnum);
 extern void ap_select_level(uint8_t i);
 extern std::string ap_format_map_id(uint8_t level_number, uint8_t volume_number);
 extern void ap_remaining_items(uint16_t* collected, uint16_t* total);
+extern uint16_t ap_steroids_duration(void);
 
 // Conditional abilities
 extern bool ap_can_dive();
