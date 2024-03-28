@@ -3972,15 +3972,13 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
                 ap_location_t secret_loc = ap_game_config["locations"][level_id]["sectors"][sector_str]["id"].asInt();
                 if (secret_loc > 0 && AP_LOCATION_CHECK_MASK(secret_loc, (AP_LOC_SECRET | AP_LOC_USED)))
                 {
+                    // Always count secrets so the numbers reflect checks, not pickup locations
+                    items_max++;
+                    if (AP_LOCATION_CHECKED(secret_loc)) items_collected++;
                     if (goal_secret)
                     {
                         goals_max++;
                         if (AP_LOCATION_CHECKED(secret_loc)) goals_collected++;
-                    }
-                    else
-                    {
-                        items_max++;
-                        if (AP_LOCATION_CHECKED(secret_loc)) items_collected++;
                     }
                 }
             }
@@ -3989,15 +3987,13 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
                 ap_location_t exit_loc = ap_game_config["locations"][level_id]["exits"][exit_str]["id"].asInt();
                 if (exit_loc > 0 && AP_LOCATION_CHECK_MASK(exit_loc, (AP_LOC_EXIT | AP_LOC_USED)))
                 {
+                    // Always count exits so the numbers reflect checks, not pickup locations
+                    items_max++;
+                    if (AP_LOCATION_CHECKED(exit_loc)) items_collected++;
                     if (goal_exit || (goal_boss && has_boss))
                     {
                         goals_max++;
                         if (AP_LOCATION_CHECKED(exit_loc)) goals_collected++;
-                    }
-                    else
-                    {
-                        items_max++;
-                        if (AP_LOCATION_CHECKED(exit_loc)) items_collected++;
                     }
                 }
             }
