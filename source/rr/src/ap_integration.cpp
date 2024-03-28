@@ -826,6 +826,7 @@ void process_message_queue()
         // And trigger a new quote
         ACTIVE_PLAYER->ftq = 0;
         P_DoQuote(AP_MESSAGE_QUOTE, ACTIVE_PLAYER);
+        OSD_Printf("%s%s\n", AP_OSDTEXT_NORMAL, ap_message_str.c_str());
     }
 }
 

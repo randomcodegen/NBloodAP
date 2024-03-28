@@ -1216,7 +1216,8 @@ void P_DoQuote(int32_t q, DukePlayer_t *p)
 
     if (p->ftq != q)
     {
-        if (p == g_player[screenpeek].ps && apStrings[q][0] != '\0')
+        // [AP] We print the AP messages from the message queue handler, so skip them here
+        if (q != AP_MESSAGE_QUOTE && p == g_player[screenpeek].ps && apStrings[q][0] != '\0')
             OSD_Printf(cq ? OSDTEXT_DEFAULT "%s\n" : "%s\n", apStrings[q]);
 
         p->ftq = q;
