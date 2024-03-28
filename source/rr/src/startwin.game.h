@@ -48,4 +48,3 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define IDCAPSERVER     111
 #define IDCAPUSER       112
 #define IDCAPPASSWORD   113
-#define IDCAPLOCALGAME  114

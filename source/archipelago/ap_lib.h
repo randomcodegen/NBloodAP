@@ -88,7 +88,6 @@ typedef struct {
     const char* game;
     const char* player;
     const char* password;
-    const char* sp_world;
 } ap_connection_settings_t;
 
 extern void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection);

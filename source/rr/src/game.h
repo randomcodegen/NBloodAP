@@ -155,7 +155,6 @@ typedef struct {
     char ap_server[MAXAPSETTING];
     char ap_user[MAXAPSETTING];
     char ap_pass[MAXAPSETTING];
-    char ap_local[MAXAPSETTING];
 } ud_setup_t;
 
 typedef struct {

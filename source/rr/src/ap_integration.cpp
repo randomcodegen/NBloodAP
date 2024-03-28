@@ -411,13 +411,7 @@ void ap_startup(void)
 {
     // [AP] Get connection settings from user defs
     ap_connection_settings.mode = AP_DISABLED;
-    if (Bstrlen(ud.setup.ap_local) > 0)
-    {
-        ap_connection_settings.mode = AP_LOCAL;
-        ap_connection_settings.sp_world = ud.setup.ap_local;
-        AP_Printf("Running local game from " + std::string(ud.setup.ap_local));
-    }
-    else if (Bstrlen(ud.setup.ap_user) > 0)
+    if (Bstrlen(ud.setup.ap_user) > 0)
     {
         ap_connection_settings.mode = AP_SERVER;
         ap_connection_settings.player = ud.setup.ap_user;
@@ -524,7 +518,7 @@ void ap_fix_spawns(void)
     g_blimpSpawnItems[14] = FREEZEAMMO;
 }
 
-ap_connection_settings_t ap_connection_settings = {AP_DISABLED, "", "", "", "", ""};
+ap_connection_settings_t ap_connection_settings = {AP_DISABLED, "", "", "", ""};
 
 void ap_initialize(void)
 {

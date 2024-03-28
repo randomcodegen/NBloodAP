@@ -105,7 +105,6 @@ static void PopulateForm(int32_t pgs)
     if (pgs & POPULATE_GAMEDIRS)
     {
         HWND hwnd = GetDlgItem(pages[TAB_CONFIG], IDCGAMEDIR);
-        HWND hwndsp = GetDlgItem(pages[TAB_CONFIG], IDCAPLOCALGAME);
 
         getfilenames("/");
         (void)ComboBox_ResetContent(hwnd);
@@ -128,31 +127,6 @@ static void PopulateForm(int32_t pgs)
 
             i++;
             j++;
-        }
-
-        (void)ComboBox_ResetContent(hwndsp);
-        r = ComboBox_AddString(hwndsp, "None");
-        (void)ComboBox_SetItemData(hwndsp, r, 0);
-        (void)ComboBox_SetCurSel(hwndsp, r);
-        auto spfiles = findspworlds;
-        bool local_found = false;
-        for (int i=1, j=1; spfiles != NULL; spfiles=spfiles->next)
-        {
-            (void)ComboBox_AddString(hwndsp, spfiles->name);
-            (void)ComboBox_SetItemData(hwndsp, i, j);
-            if (Bstrcasecmp(spfiles->name, settings.shared.ap_local) == 0)
-            {
-                (void)ComboBox_SetCurSel(hwndsp, i);
-                local_found = true;
-            }
-
-            i++;
-            j++;
-        }
-        // Whatever local world we last played no longer exists, clear setting
-        if (!local_found)
-        {
-            Bmemset(settings.shared.ap_local, 0, MAXAPSETTING);
         }
     }
 
@@ -355,30 +329,6 @@ static INT_PTR CALLBACK ConfigPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                 }
             }
             return TRUE;
-        case IDCAPLOCALGAME:
-            if (HIWORD(wParam) == CBN_SELCHANGE)
-            {
-                int i = ComboBox_GetCurSel((HWND)lParam);
-                if (i != CB_ERR) i = ComboBox_GetItemData((HWND)lParam, i);
-                if (i != CB_ERR)
-                {
-                    if (i==0)
-                        Bmemset(settings.shared.ap_local, 0, MAXAPSETTING);
-                    else
-                    {
-                        BUILDVFS_FIND_REC *spwld = findspworlds;
-                        for (int j = 1; spwld != NULL; spwld = spwld->next, j++)
-                        {
-                            if (j == i)
-                            {
-                                Bstrcpy(settings.shared.ap_local, spwld->name);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            return TRUE;
         case IDCDATA:
         {
             if (HIWORD(wParam) != LBN_SELCHANGE) break;
@@ -441,7 +391,6 @@ static void EnableConfig(bool n)
     EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCINPUT), n);
     EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCPOLYMER), n);
     EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCVMODE), n);
-    EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCAPLOCALGAME), n);
     EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCAPSERVER), n);
     EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCAPUSER), n);
     EnableWindow(GetDlgItem(pages[TAB_CONFIG], IDCAPPASSWORD), n);

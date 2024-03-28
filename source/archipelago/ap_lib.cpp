@@ -308,8 +308,6 @@ void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection)
 
     if (connection.mode == AP_SERVER)
         AP_Init(connection.ip, connection.game, connection.player, connection.password);
-    else if (connection.mode == AP_LOCAL)
-        AP_Init(connection.sp_world);
     else
         return;
     AP_SetItemClearCallback(&AP_ClearAllItems);

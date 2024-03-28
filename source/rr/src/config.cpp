@@ -851,7 +851,6 @@ int32_t CONFIG_ReadSetup(void)
 #endif
 
     // [AP] Read connection settings
-    SCRIPT_GetString(ud.config.scripthandle, "AP", "Local", ud.setup.ap_local);
     SCRIPT_GetString(ud.config.scripthandle, "AP", "Server", ud.setup.ap_server);
     SCRIPT_GetString(ud.config.scripthandle, "AP", "User", ud.setup.ap_user);
     SCRIPT_GetString(ud.config.scripthandle, "AP", "Password", ud.setup.ap_pass);
@@ -951,7 +950,6 @@ void CONFIG_WriteSetup(uint32_t flags)
 #endif
 
     // [AP] Connection settings
-    SCRIPT_PutString(ud.config.scripthandle, "AP", "Local", ud.setup.ap_local);
     SCRIPT_PutString(ud.config.scripthandle, "AP", "Server", ud.setup.ap_server);
     SCRIPT_PutString(ud.config.scripthandle, "AP", "User", ud.setup.ap_user);
     SCRIPT_PutString(ud.config.scripthandle, "AP", "Password", ud.setup.ap_pass);
