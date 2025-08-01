@@ -1,3 +1,27 @@
+## APWorld Setup:
+- Put duke3d.apworld in C:\\ProgramData\\Archipelago\\custom_worlds\\
+- Start the Launcher and click "Generate Template Options" to create the Duke Nukem 3D.yaml file
+- Modify it and put the .yaml file in C:\\ProgramData\\Archipelago\\players\\
+- Run ArchipelagoGenerate.exe and then ArchipelagoServer.exe
+
+## Client Setup:
+- Extract NBloodAP.zip into a folder (e.g. .\\NBloodAP\\ )
+- Launch the .exe and enter your connection details
+
+## Adaptations for Archipelago Support
+
+* Only supports Windows x64 builds right now
+* Building with Visual Studio:
+  * Clone APCpp lib and dependencies: git submodule update --init --recursive
+  * Generate Visual Studio solution: cmake APCpp -B platform/Windows/APCpp -G "Visual Studio 17 2022" -A x64
+  * Build rednukem project as Debug/Release x64 variant
+* Game specific APWorld implementations:
+  * Duke Nukem 3D 1.5 Atomic Edition:
+    * https://github.com/LLCoolDave/Duke3DAP
+   
+
+# Original Project Readme:
+
 # NBlood / Rednukem / PCExhumed
 Reverse-engineered ports of Build games using EDuke32 engine technology and development principles
 
@@ -88,14 +112,3 @@ See: https://wiki.eduke32.com/wiki/Main_Page
 
 ## Acknowledgments
   See AUTHORS.md
-
-## Adaptations for Archipelago Support
-
-* Only supports Windows x64 builds right now
-* Building with Visual Studio:
-  * Clone APCpp lib and dependencies: git submodule update --init --recursive
-  * Generate Visual Studio solution: cmake APCpp -B platform/Windows/APCpp -G "Visual Studio 17 2022" -A x64
-  * Build rednukem project as Debug/Release x64 variant
-* Game specific APWorld implementations:
-  * Duke Nukem 3D 1.5 Atomic Edition:
-    * https://github.com/LLCoolDave/Duke3DAP
