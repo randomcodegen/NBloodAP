@@ -1,0 +1,10 @@
+grpinfo
+{
+    name "Duke Nukem 3D Randomizer for Archipelago"
+    scriptname "DUKE3DAP.CON"
+    size 224736
+    crc 0x2343e5f0
+    // AP + Duke Nukem 3D
+    flags 0x00100001
+    dependency DUKE15_CRC
+}

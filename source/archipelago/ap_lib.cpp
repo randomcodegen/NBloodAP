@@ -103,7 +103,7 @@ static void set_available_locations(std::string json)
     Json::Value locations;
     ap_reader.parse(json, locations);
 
-    std::vector<int64_t> scout_reqs;
+    std::set<int64_t> scout_reqs;
 
     for (unsigned int i=0; i < locations.size(); i++)
     {
@@ -112,7 +112,7 @@ static void set_available_locations(std::string json)
         if (AP_VALID_LOCATION_ID(short_id))
         {
             ap_locations[short_id].state |= (AP_LOC_USED);
-            scout_reqs.push_back(location_id);
+            scout_reqs.insert(location_id);
         }
     }
     // Send out a location scout package for them so we can see which ones are progressive
@@ -321,7 +321,8 @@ void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection)
     AP_RegisterSlotDataRawCallback("checksum", &set_id_checksums);
     AP_Start();
 
-    if(sync_wait_for_data(10000))
+    // RANDO: Increased timeout to support large multiworlds that send big datapackages
+    if(sync_wait_for_data(100000))
     {
         AP_Shutdown();
         // ToDo Just abort entirely?
