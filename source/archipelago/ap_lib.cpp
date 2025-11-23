@@ -302,6 +302,9 @@ void AP_Initialize(Json::Value game_config, ap_connection_settings_t connection)
         return;
     }
 
+    AP_NetworkVersion version = { 0, 6, 4 };
+    AP_SetClientVersion(&version);
+
     init_location_table(game_config["locations"]);
     init_item_table(game_config["items"]);
     ap_game_config = game_config;
