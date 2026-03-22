@@ -15,9 +15,6 @@
   * Clone APCpp lib and dependencies: git submodule update --init --recursive
   * Generate Visual Studio solution: cmake APCpp -B platform/Windows/APCpp -G "Visual Studio 17 2022" -A x64
   * Build rednukem project as Debug/Release x64 variant
-* Game specific APWorld implementations:
-  * Duke Nukem 3D 1.5 Atomic Edition:
-    * https://github.com/LLCoolDave/Duke3DAP
    
 
 # Original Project Readme:
