@@ -212,6 +212,10 @@ static void PopulateForm(int32_t pgs)
     {
         HWND hwnd = GetDlgItem(pages[TAB_CONFIG], IDCDATA);
 
+        int firstItem = -1;
+        grpfile_t const *firstGrp = NULL;
+        bool haveSelection = false;
+
         for (auto fg = foundgrps; fg; fg=fg->next)
         {
             // [AP] Only list AP randomizer grps here
@@ -219,8 +223,23 @@ static void PopulateForm(int32_t pgs)
             Bsprintf(buf, "%s\t%s", fg->type->name, fg->filename);
             int const j = ListBox_AddString(hwnd, buf);
             (void)ListBox_SetItemData(hwnd, j, (LPARAM)fg);
+            if (firstItem < 0)
+            {
+                firstItem = j;
+                firstGrp = fg;
+            }
             if (settings.grp == fg)
+            {
                 (void)ListBox_SetCurSel(hwnd, j);
+                haveSelection = true;
+            }
+        }
+
+        // [AP] Default to the first available grp so nothing crashes when none is selected
+        if (!haveSelection && firstItem >= 0)
+        {
+            (void)ListBox_SetCurSel(hwnd, firstItem);
+            settings.grp = firstGrp;
         }
     }
 
