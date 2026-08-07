@@ -1,4 +1,6 @@
 #include "ap_integration.h"
+// For raw APCpp DataStorage APIs used by ap_publish_current_level
+#include "Archipelago.h"
 // For Numsprites and sprite
 #include "build.h"
 // For G_AddGroup
@@ -1244,6 +1246,39 @@ void ap_sync_inventory()
     ap_load_dynamic_player_data();
 }
 
+// Publish the player's current level to the global DataStorage key
+// "duke3d_current_level_<team>_<player_id>" as JSON {level, episode} with
+// 1-based indices. No-op when not connected.
+static void ap_publish_current_level(void)
+{
+    // The codebase only ever assigns AP_INITIALIZED; the AP_CONNECTED state
+    // is defined but never reached, so APConnected is always false. Match the
+    // convention used elsewhere (e.g. AP_SyncProgress) instead.
+    if (ap_global_state != AP_INITIALIZED) return;
+
+    Json::Value value;
+    value["level"]   = Json::Int(ud.level_number + 1);
+    value["episode"] = Json::Int(ud.volume_number + 1);
+
+    Json::FastWriter writer;
+    std::string serialized = writer.write(value);
+
+    // APCpp doesn't expose the player's team today; per Archipelago.h, team is
+    // "Always 0 for now". Encoded in the key for forward compatibility and
+    // parity with other AP trackers (e.g. warioland_curlevelid_<team>_<slot>).
+    const int ap_team = 0;
+
+    AP_SetServerDataRequest req;
+    req.key = "duke3d_current_level_" + std::to_string(ap_team) + "_" + std::to_string(AP_GetPlayerID());
+    AP_DataStorageOperation op = { "replace", &serialized };
+    req.operations.push_back(op);
+    req.type = AP_DataType::Raw;
+    std::string default_value = "{}";
+    req.default_value = &default_value;
+
+    AP_SetServerData(&req);
+}
+
 void ap_on_map_load(void)
 {
     current_map = ap_format_map_id(ud.level_number, ud.volume_number);
@@ -1259,6 +1294,7 @@ void ap_on_map_load(void)
 #endif
 
     ap_mark_known_secret_sectors(false);
+    ap_publish_current_level();
 }
 
 void ap_on_save_load(void)
@@ -1268,6 +1304,7 @@ void ap_on_save_load(void)
     ap_mark_known_secret_sectors(true);
     ap_sync_inventory();
     ap_delete_collected_sprites();
+    ap_publish_current_level();
 }
 
 void ap_check_secret(int16_t sectornum)
