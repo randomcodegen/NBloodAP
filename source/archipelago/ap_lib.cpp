@@ -1,6 +1,8 @@
 #include "ap_lib.h"
 #include "Archipelago.h"
+#include "baselayer.h"
 #include "compat.h"
+#include "log.h"
 #include <chrono>
 #include <thread>
 
@@ -262,6 +264,10 @@ bool sync_wait_for_data(uint32_t timeout)
 
     // Should have the id checksum from slot data by now, verify it matches our loaded ap_config.json
     if (strcmp(ap_game_config["checksum"].asCString(), remote_id_checksum.c_str())) {
+        LOG_F(ERROR, "AP: Game data checksum mismatch: local='%s', remote='%s'", ap_game_config["checksum"].asCString(), remote_id_checksum.c_str());
+        wm_msgbox("Archipelago Connection Error",
+                  "The selected GRP/ZIP does not match this server slot.\n\n"
+                  "Select the game data generated for this multiworld and try again.");
         AP_Errorf("Remote server item/location IDs don't match locally loaded configuration.");
         return TRUE;
     }
